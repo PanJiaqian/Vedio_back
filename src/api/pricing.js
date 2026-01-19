@@ -1,4 +1,4 @@
-const BASE_URL = "https://www.xydriftcraft.com:1770";
+import { BASE_URL } from "./auth";
 
 function buildQuery(params) {
   const q = Object.entries(params || {})
@@ -9,8 +9,10 @@ function buildQuery(params) {
 }
 
 async function request(path, { method = "GET", token, params, body } = {}) {
+  const isAbsolute = path.startsWith("http");
   const url =
-    BASE_URL + path + (method === "GET" ? buildQuery(params || {}) : "");
+    (isAbsolute ? path : BASE_URL + path) +
+    (method === "GET" ? buildQuery(params || {}) : "");
   const res = await fetch(url, {
     method,
     headers: {
@@ -80,5 +82,160 @@ export async function createPricing(payload, token) {
     token,
     body: payload,
   });
+  return json.data;
+}
+
+export async function getUsersList(params, token) {
+  const json = await request("/admin/v1/users", {
+    method: "GET",
+    token,
+    params,
+  });
+  return json.data;
+}
+
+export async function getUserDetail(id, token) {
+  const json = await request(`/admin/v1/users/${encodeURIComponent(id)}`, {
+    method: "GET",
+    token,
+  });
+  return json.data;
+}
+
+export async function updateUserStatus(id, status, token) {
+  const json = await request(
+    `/admin/v1/users/${encodeURIComponent(id)}/status`,
+    {
+      method: "POST",
+      token,
+      body: { status },
+    }
+  );
+  return json.data;
+}
+
+export async function getMembershipList(params, token) {
+  const json = await request("/admin/v1/memberships", {
+    method: "GET",
+    token,
+    params,
+  });
+  return json.data;
+}
+
+export async function getOrderList(params, token) {
+  const json = await request("/admin/v1/orders", {
+    method: "GET",
+    token,
+    params,
+  });
+  return json.data;
+}
+
+export async function getRechargeList(params, token) {
+  const json = await request("/admin/v1/recharges", {
+    method: "GET",
+    token,
+    params,
+  });
+  return json.data;
+}
+
+export async function getPointsList(params, token) {
+  const json = await request("/admin/v1/points", {
+    method: "GET",
+    token,
+    params,
+  });
+  return json.data;
+}
+
+export async function getMembershipMapping(token) {
+  const json = await request("/admin/v1/membership-mapping", {
+    method: "GET",
+    token,
+  });
+  return json.data;
+}
+
+export async function updateMembershipMapping(payload, token) {
+  const json = await request("/admin/v1/membership-mapping", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return json.data;
+}
+
+export async function getMaterialsList(params, token) {
+  const json = await request("/admin/v1/materials", {
+    method: "GET",
+    token,
+    params,
+  });
+  return json.data;
+}
+
+export async function removeMaterial(id, token) {
+  const json = await request(
+    `/admin/v1/materials/${encodeURIComponent(id)}/remove`,
+    {
+      method: "POST",
+      token,
+    }
+  );
+  return json.data;
+}
+
+export async function publishMaterial(id, token) {
+  const json = await request(
+    `/admin/v1/materials/${encodeURIComponent(id)}/publish`,
+    {
+      method: "POST",
+      token,
+    }
+  );
+  return json.data;
+}
+
+export async function getCreativeWorksList(params, token) {
+  const json = await request("/admin/v1/creative-works", {
+    method: "GET",
+    token,
+    params,
+  });
+  return json.data;
+}
+
+export async function getCreativeWorkDetail(id, token) {
+  const json = await request(
+    `/admin/v1/creative-works/${encodeURIComponent(id)}`,
+    {
+      method: "GET",
+      token,
+    }
+  );
+  return json.data;
+}
+
+export async function publishCreativeWork(id, token) {
+  const json = await request(
+    `/admin/v1/creative-works/${encodeURIComponent(id)}/publish`,
+    {
+      method: "POST",
+      token,
+    }
+  );
+  return json.data;
+}
+
+export async function unpublishCreativeWork(id, token) {
+  const json = await request(
+    `/admin/v1/creative-works/${encodeURIComponent(id)}/unpublish`,
+    {
+      method: "POST",
+      token,
+    }
+  );
   return json.data;
 }

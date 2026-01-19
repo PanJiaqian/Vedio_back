@@ -1,4 +1,4 @@
-const BASE_URL = "https://www.xydriftcraft.com:1770";
+export const BASE_URL = "https://www.xydriftcraft.com:1770";
 
 async function request(path, method, data) {
   const res = await fetch(`${BASE_URL}${path}`, {
