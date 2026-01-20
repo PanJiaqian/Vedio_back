@@ -484,13 +484,6 @@
           <div class="page-header">
             <h1>素材管理</h1>
             <div class="actions">
-              <input
-                v-model="materialsFilters.category"
-                class="input"
-                type="text"
-                placeholder="分类"
-                @change="loadMaterials"
-              />
               <select
                 v-model="materialsFilters.type"
                 class="input"
@@ -499,6 +492,13 @@
                 <option value="COMMUNITY">COMMUNITY</option>
                 <option value="PERSONAL">PERSONAL</option>
               </select>
+              <input
+                v-model="materialsFilters.context"
+                class="input search-input"
+                type="text"
+                placeholder="搜索ID/名称/昵称/会员ID"
+                @input="doMaterialsSearch"
+              />
               <div class="pagination-buttons">
                 <span
                   >第 {{ materialsFilters.page }} 页 / 每页
@@ -670,6 +670,13 @@
           <div class="page-header">
             <h1>作品列表</h1>
             <div class="actions">
+              <input
+                v-model="worksFilters.context"
+                class="input search-input"
+                type="text"
+                placeholder="搜索ID/名称/昵称/会员ID"
+                @input="doWorksSearch"
+              />
               <div class="pagination-buttons">
                 <span
                   >第 {{ worksFilters.page }} 页 / 每页
@@ -941,6 +948,13 @@
           <div class="page-header">
             <h1>会员订阅列表</h1>
             <div class="actions">
+              <input
+                v-model="membershipsFilters.context"
+                class="input search-input"
+                type="text"
+                placeholder="搜索用户ID或用户昵称"
+                @input="doMembershipsSearch"
+              />
               <div class="pagination-buttons">
                 <span
                   >第 {{ membershipsFilters.page }} 页 / 每页
@@ -1110,7 +1124,15 @@
                   <div class="td">
                     {{ o.amount ?? 0 }}
                   </div>
-                  <div class="td">{{ o.orderType ?? "-" }}</div>
+                  <div class="td">
+                    {{
+                      o.orderType === "RECHARGE"
+                        ? "充值"
+                        : o.orderType === "SUBSCRIPTION"
+                        ? "订阅"
+                        : o.orderType ?? "-"
+                    }}
+                  </div>
                   <div class="td">
                     {{ formatTime(o.transactionDate) }}
                   </div>
@@ -1151,7 +1173,15 @@
                     </div>
                     <div class="detail-item">
                       <label>订单类型</label>
-                      <span>{{ o.orderType ?? "-" }}</span>
+                      <span>
+                        {{
+                          o.orderType === "RECHARGE"
+                            ? "充值"
+                            : o.orderType === "SUBSCRIPTION"
+                            ? "订阅"
+                            : o.orderType ?? "-"
+                        }}
+                      </span>
                     </div>
                     <div class="detail-item">
                       <label>金额</label>
@@ -1223,6 +1253,15 @@
           <div class="page-header">
             <h1>积分扣除记录</h1>
             <div class="actions">
+              <select
+                v-model="pointsFilters.resourceType"
+                class="input"
+                @change="loadPoints"
+              >
+                <option value="">全部类型</option>
+                <option value="video">视频</option>
+                <option value="image">图片</option>
+              </select>
               <div class="pagination-buttons">
                 <span
                   >第 {{ pointsFilters.page }} 页 / 每页
@@ -1256,7 +1295,15 @@
                   <div class="td">{{ p.id }}</div>
                   <div class="td">{{ p.nickname }}</div>
                   <div class="td">{{ p.deductedPoints }}</div>
-                  <div class="td">{{ p.resourceType }}</div>
+                  <div class="td">
+                    {{
+                      String(p.resourceType).toUpperCase() === "VIDEO"
+                        ? "视频"
+                        : String(p.resourceType).toUpperCase() === "IMAGE"
+                        ? "图片"
+                        : p.resourceType
+                    }}
+                  </div>
                   <div class="td">{{ p.resourceId }}</div>
                   <div class="td">{{ formatTime(p.transactionDate) }}</div>
                   <div class="td ops">
@@ -1296,7 +1343,15 @@
                     </div>
                     <div class="detail-item">
                       <label>资源类型</label>
-                      <span>{{ p.resourceType }}</span>
+                      <span>
+                        {{
+                          p.resourceType === "VIDEO"
+                            ? "视频"
+                            : p.resourceType === "IMAGE"
+                            ? "图片"
+                            : p.resourceType
+                        }}
+                      </span>
                     </div>
                     <div class="detail-item">
                       <label>资源ID</label>
@@ -1830,1123 +1885,6 @@
   </div>
 </template>
 
-<script>
-import {
-  getPricingList,
-  getPricingDetail,
-  deletePricing,
-  setPricingStatus,
-  updatePricing,
-  createPricing,
-  getUsersList,
-  updateUserStatus,
-  getMembershipList,
-  getOrderList,
-  getRechargeList,
-  getPointsList,
-  getMembershipMapping,
-  updateMembershipMapping,
-  getMaterialsList,
-  removeMaterial,
-  publishMaterial,
-  getCreativeWorksList,
-  getCreativeWorkDetail,
-  publishCreativeWork,
-  unpublishCreativeWork,
-} from "@/api/pricing";
-export default {
-  name: "BillingView",
-  data() {
-    return {
-      filters: {
-        service_type: "video",
-        status: 1,
-        function_node: "",
-      },
-      items: [],
-      loading: false,
-      error: "",
-      showDetail: false,
-      detail: null,
-      showEdit: false,
-      editForm: {
-        id: "",
-        service_content: "",
-        service_type: "video",
-        function_node: "",
-        model_name: "",
-        base_points_price: 0,
-        discount_rate: 100,
-        discount_start_time: null,
-        discount_end_time: null,
-        cost_points: 0,
-        points_to_cash_ratio: 10,
-      },
-      showCreate: false,
-      createForm: {
-        service_content: "",
-        service_type: "video",
-        function_node: "分镜生成",
-        model_name: "",
-        base_points_price: 0,
-        discount_rate: 100,
-        discount_start_time: null,
-        discount_end_time: null,
-        cost_points: 0,
-        points_to_cash_ratio: 10,
-      },
-      usersFilters: {
-        status: 1,
-        page: 1,
-        size: 20,
-      },
-      users: [],
-      membershipsFilters: {
-        page: 1,
-        size: 20,
-      },
-      memberships: [],
-      ordersFilters: {
-        page: 1,
-        size: 20,
-      },
-      orders: [],
-      rechargesFilters: {
-        page: 1,
-        size: 20,
-      },
-      recharges: [],
-      pointsFilters: {
-        page: 1,
-        size: 20,
-      },
-      points: [],
-      mapping: [],
-      mappingForm: {
-        membership_level: "",
-        pay_fee: 0,
-        points: 0,
-        duration_type: 1,
-        duration_value: 1,
-      },
-      materialsFilters: {
-        category: "",
-        type: "COMMUNITY",
-        page: 1,
-        size: 20,
-      },
-      materials: [],
-      worksFilters: {
-        page: 1,
-        size: 20,
-      },
-      works: [],
-      activeNav: "pricing",
-      previewVisible: false,
-      previewType: "",
-      previewSrc: "",
-    };
-  },
-  computed: {
-    token() {
-      return this.$store.state.user && this.$store.state.user.token;
-    },
-  },
-  watch: {
-    token(newToken) {
-      if (newToken) {
-        this.error = "";
-        this.loadList();
-      } else {
-        this.items = [];
-        this.error = "请先登录以获取配置列表";
-      }
-    },
-  },
-  created() {
-    this.loadList();
-  },
-  methods: {
-    async loadList() {
-      this.error = "";
-      if (!this.token) {
-        this.error = "请先登录以获取配置列表";
-        return;
-      }
-      this.loading = true;
-      try {
-        const data = await getPricingList(this.filters, this.token);
-        this.items = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "列表获取失败";
-      } finally {
-        this.loading = false;
-      }
-    },
-    async openDetail(id) {
-      this.error = "";
-      try {
-        const data = await getPricingDetail(id, this.token);
-        this.detail = data;
-        this.showDetail = true;
-      } catch (e) {
-        this.error = e && e.message ? e.message : "详情获取失败";
-      }
-    },
-    closeDetail() {
-      this.showDetail = false;
-      this.detail = null;
-    },
-    openEdit(it) {
-      this.editForm = {
-        id: it.id,
-        service_content: it.serviceContent,
-        service_type: it.serviceType,
-        function_node: it.functionNode,
-        model_name: it.modelName,
-        base_points_price: it.basePointsPrice,
-        discount_rate: it.discountRate,
-        discount_start_time: it.discountStartTime,
-        discount_end_time: it.discountEndTime,
-        cost_points: it.costPoints,
-        points_to_cash_ratio: it.pointsToCashRatio,
-      };
-      this.showEdit = true;
-    },
-    closeEdit() {
-      this.showEdit = false;
-    },
-    async submitEdit() {
-      this.error = "";
-      try {
-        await updatePricing(this.editForm, this.token);
-        this.showEdit = false;
-        await this.loadList();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "更新失败";
-      }
-    },
-    openCreate() {
-      this.showCreate = true;
-    },
-    closeCreate() {
-      this.showCreate = false;
-    },
-    async submitCreate() {
-      this.error = "";
-      try {
-        await createPricing(this.createForm, this.token);
-        this.showCreate = false;
-        await this.loadList();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "上架失败";
-      }
-    },
-    async onDelete(id) {
-      this.error = "";
-      try {
-        await deletePricing(id, this.token);
-        await this.loadList();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "删除失败";
-      }
-    },
-    async toggleStatus(it) {
-      this.error = "";
-      try {
-        await setPricingStatus(
-          { id: String(it.id), status: String(it.status === 1 ? 0 : 1) },
-          this.token
-        );
-        await this.loadList();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "状态变更失败";
-      }
-    },
-    async loadUsers() {
-      if (!this.token) {
-        this.error = "请先登录以查看用户列表";
-        return;
-      }
-      try {
-        const data = await getUsersList(this.usersFilters, this.token);
-        this.users = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "用户列表获取失败";
-      }
-    },
-    // 用户列表展开式编辑
-    setNav(name) {
-      this.activeNav = name;
-      if (name === "users") this.loadUsers();
-      else if (name === "memberships") this.loadMemberships();
-      else if (name === "orders") this.loadOrders();
-      else if (name === "recharges") this.loadRecharges();
-      else if (name === "points") this.loadPoints();
-      else if (name === "mapping") this.loadMapping();
-      else if (name === "materials") this.loadMaterials();
-      else if (name === "works") this.loadWorks();
-      else this.loadList();
-    },
-    toggleExpand(item) {
-      item._expanded = !item._expanded;
-    },
-    async loadMemberships() {
-      if (!this.token) {
-        this.error = "请先登录以查看会员订阅列表";
-        return;
-      }
-      try {
-        const data = await getMembershipList(
-          this.membershipsFilters,
-          this.token
-        );
-        this.memberships = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "会员订阅列表获取失败";
-      }
-    },
-    async loadOrders() {
-      if (!this.token) {
-        this.error = "请先登录以查看订单列表";
-        return;
-      }
-      try {
-        const data = await getOrderList(this.ordersFilters, this.token);
-        this.orders = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "订单列表获取失败";
-      }
-    },
-    async loadRecharges() {
-      if (!this.token) {
-        this.error = "请先登录以查看充值记录";
-        return;
-      }
-      try {
-        const data = await getRechargeList(this.rechargesFilters, this.token);
-        this.recharges = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "充值记录获取失败";
-      }
-    },
-    async loadPoints() {
-      if (!this.token) {
-        this.error = "请先登录以查看积分扣除记录";
-        return;
-      }
-      try {
-        const data = await getPointsList(this.pointsFilters, this.token);
-        this.points = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "积分扣除记录获取失败";
-      }
-    },
-    changeMaterialsPage(delta) {
-      const next = this.materialsFilters.page + delta;
-      this.materialsFilters.page = next < 1 ? 1 : next;
-      this.loadMaterials();
-    },
-    changeWorksPage(delta) {
-      const next = this.worksFilters.page + delta;
-      this.worksFilters.page = next < 1 ? 1 : next;
-      this.loadWorks();
-    },
-    changeMembershipsPage(delta) {
-      const next = this.membershipsFilters.page + delta;
-      this.membershipsFilters.page = next < 1 ? 1 : next;
-      this.loadMemberships();
-    },
-    changeOrdersPage(delta) {
-      const next = this.ordersFilters.page + delta;
-      this.ordersFilters.page = next < 1 ? 1 : next;
-      this.loadOrders();
-    },
-    changeRechargesPage(delta) {
-      const next = this.rechargesFilters.page + delta;
-      this.rechargesFilters.page = next < 1 ? 1 : next;
-      this.loadRecharges();
-    },
-    changePointsPage(delta) {
-      const next = this.pointsFilters.page + delta;
-      this.pointsFilters.page = next < 1 ? 1 : next;
-      this.loadPoints();
-    },
-    async loadMapping() {
-      if (!this.token) {
-        this.error = "请先登录以查看会员积分映射";
-        return;
-      }
-      try {
-        const data = await getMembershipMapping(this.token);
-        this.mapping = Array.isArray(data) ? data : (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "会员积分映射获取失败";
-      }
-    },
-    startMappingInline(mm, field) {
-      mm._editingField = field;
-      this.mappingForm = {
-        membership_level: mm.membershipLevel || "",
-        pay_fee: Number(mm.payFee || 0),
-        points: Number(mm.points || 0),
-        duration_type: Number(mm.durationType || 1),
-        duration_value: Number(mm.durationValue || 1),
-      };
-      this.$nextTick(() => {
-        const input = this.$refs[`mapping-input-${mm.id}-${field}`];
-        if (input && input[0]) {
-          input[0].focus();
-        } else if (input) {
-          input.focus();
-        }
-      });
-    },
-    async stopMappingInline(mm) {
-      if (!mm._editingField) return;
-      mm._editingField = null;
-      if (!this.token) {
-        this.error = "请先登录以更新会员积分映射";
-        return;
-      }
-      try {
-        await updateMembershipMapping(this.mappingForm, this.token);
-        mm.membershipLevel = this.mappingForm.membership_level;
-        mm.payFee = this.mappingForm.pay_fee;
-        mm.points = this.mappingForm.points;
-        mm.durationType = this.mappingForm.duration_type;
-        mm.durationValue = this.mappingForm.duration_value;
-      } catch (e) {
-        this.error = e && e.message ? e.message : "更新会员积分映射失败";
-      }
-    },
-    async loadMaterials() {
-      if (!this.token) {
-        this.error = "请先登录以查看素材列表";
-        return;
-      }
-      try {
-        const data = await getMaterialsList(this.materialsFilters, this.token);
-        this.materials = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "素材列表获取失败";
-      }
-    },
-    async publishMaterialItem(id) {
-      if (!this.token) {
-        this.error = "请先登录以进行上架操作";
-        return;
-      }
-      try {
-        await publishMaterial(id, this.token);
-        await this.loadMaterials();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "上架公共素材失败";
-      }
-    },
-    async removeMaterialItem(id) {
-      if (!this.token) {
-        this.error = "请先登录以进行下架操作";
-        return;
-      }
-      try {
-        await removeMaterial(id, this.token);
-        await this.loadMaterials();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "下架素材失败";
-      }
-    },
-    async loadWorks() {
-      if (!this.token) {
-        this.error = "请先登录以查看作品列表";
-        return;
-      }
-      try {
-        const data = await getCreativeWorksList(this.worksFilters, this.token);
-        this.works = (data && data.items) || [];
-      } catch (e) {
-        this.error = e && e.message ? e.message : "作品列表获取失败";
-      }
-    },
-    async toggleExpandWork(w) {
-      w._expanded = !w._expanded;
-      if (w._expanded && !w._detail) {
-        try {
-          const detail = await getCreativeWorkDetail(w.id, this.token);
-          w._detail = detail || {};
-        } catch (e) {
-          this.error = e && e.message ? e.message : "作品详情获取失败";
-        }
-      }
-    },
-    async publishWorkItem(id) {
-      if (!this.token) {
-        this.error = "请先登录以进行上架操作";
-        return;
-      }
-      try {
-        await publishCreativeWork(id, this.token);
-        await this.loadWorks();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "上架作品失败";
-      }
-    },
-    async unpublishWorkItem(id) {
-      if (!this.token) {
-        this.error = "请先登录以进行下架操作";
-        return;
-      }
-      try {
-        await unpublishCreativeWork(id, this.token);
-        await this.loadWorks();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "下架作品失败";
-      }
-    },
-    startWorkEdit(w, field) {
-      w._editingField = field;
-      const current =
-        (w._detail && w._detail.isPublic) !== undefined
-          ? w._detail.isPublic
-          : w.isPublic;
-      w._isPublicEdit = !!current;
-      this.$nextTick(() => {
-        const input = this.$refs[`work-input-${w.id}-${field}`];
-        if (input && input[0]) input[0].focus();
-        else if (input) input.focus();
-      });
-    },
-    async stopWorkEdit(w) {
-      if (w._editingField !== "isPublic") {
-        w._editingField = null;
-        return;
-      }
-      const wid = (w._detail && w._detail.id) || w.id;
-      const nextPublic = !!w._isPublicEdit;
-      const currentPublic =
-        (w._detail && w._detail.isPublic) !== undefined
-          ? w._detail.isPublic
-          : w.isPublic;
-      w._editingField = null;
-      if (!this.token) {
-        this.error = "请先登录以进行状态修改";
-        return;
-      }
-      if (nextPublic === currentPublic) {
-        return;
-      }
-      try {
-        if (nextPublic) {
-          await publishCreativeWork(wid, this.token);
-        } else {
-          await unpublishCreativeWork(wid, this.token);
-        }
-        if (w._detail && w._detail.isPublic !== undefined) {
-          w._detail.isPublic = nextPublic;
-        } else {
-          w.isPublic = nextPublic;
-        }
-      } catch (e) {
-        this.error = e && e.message ? e.message : "状态修改失败";
-      }
-    },
-    async toggleWorkPublic(w) {
-      const wid = (w._detail && w._detail.id) || w.id;
-      const isPublic =
-        (w._detail && w._detail.isPublic) !== undefined
-          ? w._detail.isPublic
-          : w.isPublic;
-      if (!this.token) {
-        this.error = "请先登录以进行状态修改";
-        return;
-      }
-      try {
-        if (isPublic) {
-          await unpublishCreativeWork(wid, this.token);
-        } else {
-          await publishCreativeWork(wid, this.token);
-        }
-        await this.loadWorks();
-      } catch (e) {
-        this.error = e && e.message ? e.message : "状态修改失败";
-      }
-    },
-    startEdit(item, field) {
-      item._editingField = field;
-      this.$nextTick(() => {
-        const input = this.$refs[`input-${item.id}-${field}`];
-        if (input && input[0]) {
-          input[0].focus();
-        } else if (input) {
-          input.focus();
-        }
-      });
-    },
-    async stopEdit(item) {
-      if (!item._editingField) return;
-      item._editingField = null;
-      const payload = {
-        id: item.id,
-        service_content: item.serviceContent,
-        service_type: item.serviceType,
-        function_node: item.functionNode,
-        model_name: item.modelName,
-        base_points_price: item.basePointsPrice,
-        discount_rate: item.discountRate,
-        discount_start_time: item.discountStartTime,
-        discount_end_time: item.discountEndTime,
-        cost_points: item.costPoints,
-        points_to_cash_ratio: item.pointsToCashRatio,
-      };
-      try {
-        await updatePricing(payload, this.token);
-      } catch (e) {
-        this.error = e && e.message ? e.message : "更新失败";
-      }
-    },
-    startUserEdit(user, field) {
-      user._editingField = field;
-    },
-    async stopUserEdit(user) {
-      if (!user._editingField) return;
-      user._editingField = null;
-      try {
-        await updateUserStatus(user.id, Number(user.status), this.token);
-      } catch (e) {
-        this.error = e && e.message ? e.message : "状态更新失败";
-        await this.loadUsers();
-      }
-    },
-    formatTime(val) {
-      if (!val) return "";
-      return String(val).replace("T", " ").replace("Z", "");
-    },
-    openImagePreview(src) {
-      if (!src) return;
-      this.previewSrc = src;
-      this.previewType = "image";
-      this.previewVisible = true;
-    },
-    openVideoPreview(src) {
-      if (!src) return;
-      this.previewSrc = src;
-      this.previewType = "video";
-      this.previewVisible = true;
-    },
-    closePreview() {
-      this.previewVisible = false;
-      this.previewSrc = "";
-      this.previewType = "";
-    },
-  },
-};
-</script>
+<script src="./BillingView.script.js"></script>
 
-<style scoped>
-.billing {
-  /* max-width: 1280px; */
-  margin: 32px auto;
-  padding: 0 24px;
-  animation: fade-in 0.3s ease-out;
-  min-height: calc(100vh - 128px);
-  display: flex;
-  flex-direction: column;
-}
-
-.layout {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 32px;
-  align-items: stretch;
-  flex: 1;
-}
-
-/* Sidebar */
-.sidebar {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  /* Removed sticky to allow full stretch if desired, or keep sticky but full height */
-  height: calc(100vh - 128px);
-  position: sticky;
-  top: 96px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-.menu-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 12px;
-  padding-left: 12px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  border-radius: 8px;
-  color: #4b5563;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.menu-item:hover {
-  background: #f3f4f6;
-  color: var(--primary-color);
-}
-
-.menu-item.active {
-  background: #eff6ff;
-  color: var(--primary-color);
-}
-
-.menu-item .icon {
-  margin-right: 12px;
-  font-size: 18px;
-}
-
-/* Page Header */
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  background: #fff;
-  padding: 20px 24px;
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.page-header h1 {
-  font-size: 20px;
-  color: var(--text-main);
-  font-weight: 700;
-  margin: 0;
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.actions .input {
-  width: auto;
-  min-width: 120px;
-}
-
-/* Table */
-.table {
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  border: 1px solid var(--border-color);
-}
-
-.thead {
-  display: grid;
-  grid-template-columns: 80px 2fr 100px 120px 120px 100px 100px 100px 80px 80px;
-  gap: 16px;
-  align-items: center;
-  padding: 16px 24px;
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.tr {
-  display: grid;
-  grid-template-columns: 80px 2fr 100px 120px 120px 100px 100px 100px 80px 80px;
-  gap: 16px;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-  color: var(--text-main);
-  transition: background-color 0.15s;
-  cursor: pointer;
-}
-
-.tr:hover {
-  background-color: #f9fafb;
-}
-
-.tr:last-child {
-  border-bottom: none;
-}
-
-.th,
-.td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.td.ops {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.expand-icon {
-  font-size: 12px;
-  color: #9ca3af;
-  transition: transform 0.3s;
-}
-
-.expand-icon.expanded {
-  transform: rotate(180deg);
-  color: var(--primary-color);
-}
-
-.tr-detail {
-  background: #f8fafc;
-  border-bottom: 1px solid #f3f4f6;
-  padding: 24px;
-  animation: slide-down 0.3s ease-out;
-}
-
-@keyframes slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.detail-item label {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.detail-item span {
-  font-size: 14px;
-  color: #1f2937;
-  font-weight: 500;
-}
-
-.detail-item.full-width {
-  grid-column: 1 / -1;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.detail-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-/* Status Badge */
-.status {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.status::before {
-  content: "";
-  display: block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.status.online {
-  background: #ecfdf5;
-  color: #059669;
-}
-
-.status.online::before {
-  background: #10b981;
-}
-
-.status.offline {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.status.offline::before {
-  background: #9ca3af;
-}
-
-/* Modal Overrides */
-.modal {
-  width: 600px;
-  max-width: 90vw;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-row .label {
-  color: var(--text-secondary);
-}
-
-.detail-row .value {
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-/* Form Grid for Modal */
-.modal-body .form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.modal-body .form .field:nth-last-child(2),
-.modal-body .form .field:last-child,
-.modal-body .form button {
-  grid-column: span 2;
-}
-
-.empty {
-  padding: 64px 0;
-  text-align: center;
-  color: var(--text-secondary);
-}
-.preview-modal {
-  width: 80vw;
-  max-width: 90vw;
-}
-.preview-img {
-  max-width: 80vw;
-  max-height: 80vh;
-  border-radius: 8px;
-}
-.preview-video {
-  width: 80vw;
-  max-height: 80vh;
-  border-radius: 8px;
-}
-/* Lightweight preview (no backdrop) */
-.preview-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  pointer-events: auto;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-.preview-close {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  background: #111827;
-  color: #fff;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 9999px;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 32px;
-}
-
-/* Users Table Specifics */
-.users-thead,
-.users-tr {
-  display: grid;
-  grid-template-columns: 80px 1.5fr 1fr 1fr 1.5fr 100px;
-  gap: 16px;
-  padding: 12px 24px;
-  align-items: center;
-}
-
-.users-thead {
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border-color);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.users-tr {
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-}
-
-.users-tr:last-child {
-  border-bottom: none;
-}
-
-/* Mapping Table Specifics */
-.mapping-thead,
-.mapping-tr {
-  display: grid;
-  grid-template-columns: 80px 1.5fr 1fr 1fr 1fr 1fr 100px;
-  gap: 16px;
-  padding: 12px 24px;
-  align-items: center;
-}
-
-.mapping-thead {
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border-color);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.mapping-tr {
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-}
-
-.mapping-tr:last-child {
-  border-bottom: none;
-}
-
-/* Materials Table Specifics */
-.materials-thead,
-.materials-tr {
-  display: grid;
-  grid-template-columns: 80px 1.5fr 1fr 1fr 1.5fr 100px;
-  gap: 16px;
-  padding: 12px 24px;
-  align-items: center;
-}
-
-.materials-thead {
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border-color);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.materials-tr {
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-}
-
-.materials-tr:last-child {
-  border-bottom: none;
-}
-/* Points Table Specifics */
-/* Works Table Specifics */
-.works-thead,
-.works-tr {
-  display: grid;
-  grid-template-columns: 80px 2fr 1fr 1.5fr 100px;
-  gap: 16px;
-  padding: 12px 24px;
-  align-items: center;
-}
-
-.works-thead {
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border-color);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.works-tr {
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-}
-
-.works-tr:last-child {
-  border-bottom: none;
-}
-/* Points Table Specifics */
-.points-thead,
-.points-tr {
-  display: grid;
-  grid-template-columns: 80px 1.5fr 1fr 1fr 1fr 1.5fr 100px;
-  gap: 16px;
-  padding: 12px 24px;
-  align-items: center;
-}
-
-.points-thead {
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border-color);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.points-tr {
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-}
-
-.points-tr:last-child {
-  border-bottom: none;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.inline-input {
-  font-size: 14px;
-  padding: 4px 8px;
-  border: 1px solid var(--primary-color);
-  border-radius: 4px;
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  background: #fff;
-  color: var(--text-main);
-  min-height: 28px;
-}
-</style>
+<style scoped src="./BillingView.style.css"></style>

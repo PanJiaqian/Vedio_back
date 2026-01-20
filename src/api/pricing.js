@@ -239,3 +239,48 @@ export async function unpublishCreativeWork(id, token) {
   );
   return json.data;
 }
+
+export async function searchMemberships(params, token) {
+  const ctx =
+    params && typeof params.context !== "undefined" ? params.context : "";
+  const page = params && typeof params.page !== "undefined" ? params.page : 1;
+  const size = params && typeof params.size !== "undefined" ? params.size : 20;
+  const path = `/admin/v1/memberships/search?context=${encodeURIComponent(
+    ctx
+  )}&page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`;
+  const json = await request(path, {
+    method: "GET",
+    token,
+  });
+  return json.data;
+}
+
+export async function searchMaterials(params, token) {
+  const ctx =
+    params && typeof params.context !== "undefined" ? params.context : "";
+  const page = params && typeof params.page !== "undefined" ? params.page : 1;
+  const size = params && typeof params.size !== "undefined" ? params.size : 20;
+  const path = `/admin/v1/materials/search?context=${encodeURIComponent(
+    ctx
+  )}&page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`;
+  const json = await request(path, {
+    method: "GET",
+    token,
+  });
+  return json.data;
+}
+
+export async function searchCreativeWorks(params, token) {
+  const ctx =
+    params && typeof params.context !== "undefined" ? params.context : "";
+  const page = params && typeof params.page !== "undefined" ? params.page : 1;
+  const size = params && typeof params.size !== "undefined" ? params.size : 20;
+  const path = `/admin/v1/creative-works/search?context=${encodeURIComponent(
+    ctx
+  )}&page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`;
+  const json = await request(path, {
+    method: "GET",
+    token,
+  });
+  return json.data;
+}
