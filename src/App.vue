@@ -135,6 +135,11 @@ export default {
       return this.$store.getters.userName;
     },
   },
+  created() {
+    if (!this.isLoggedIn) {
+      this.showAuthModal = true;
+    }
+  },
   methods: {
     openAuthModal() {
       this.error = "";

@@ -159,7 +159,7 @@ export async function getMembershipMapping(token) {
 }
 
 export async function updateMembershipMapping(payload, token) {
-  const json = await request("/admin/v1/membership-mapping", {
+  const json = await request("/admin/v1/membership-mapping/update", {
     method: "POST",
     token,
     body: payload,
@@ -167,6 +167,25 @@ export async function updateMembershipMapping(payload, token) {
   return json.data;
 }
 
+export async function deleteMembershipMapping(id, token) {
+  const json = await request(
+    `/admin/v1/membership-mapping/delete/${encodeURIComponent(id)}`,
+    {
+      method: "POST",
+      token,
+    }
+  );
+  return json.data;
+}
+
+export async function createMembershipMapping(payload, token) {
+  const json = await request("/admin/v1/membership-mapping/create", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return json.data;
+}
 export async function getMaterialsList(params, token) {
   const json = await request("/admin/v1/materials", {
     method: "GET",
@@ -187,16 +206,16 @@ export async function removeMaterial(id, token) {
   return json.data;
 }
 
-export async function publishMaterial(id, token) {
-  const json = await request(
-    `/admin/v1/materials/${encodeURIComponent(id)}/publish`,
-    {
-      method: "POST",
-      token,
-    }
-  );
-  return json.data;
-}
+// export async function publishMaterial(id, token) {
+//   const json = await request(
+//     `/admin/v1/materials/${encodeURIComponent(id)}/publish`,
+//     {
+//       method: "POST",
+//       token,
+//     }
+//   );
+//   return json.data;
+// }
 
 export async function getCreativeWorksList(params, token) {
   const json = await request("/admin/v1/creative-works", {
@@ -260,9 +279,13 @@ export async function searchMaterials(params, token) {
     params && typeof params.context !== "undefined" ? params.context : "";
   const page = params && typeof params.page !== "undefined" ? params.page : 1;
   const size = params && typeof params.size !== "undefined" ? params.size : 20;
-  const path = `/admin/v1/materials/search?context=${encodeURIComponent(
-    ctx
-  )}&page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`;
+  const type =
+    params && typeof params.type !== "undefined" ? params.type : undefined;
+  const path =
+    `/admin/v1/materials/search?context=${encodeURIComponent(ctx)}` +
+    `&page=${encodeURIComponent(page)}` +
+    `&size=${encodeURIComponent(size)}` +
+    (type ? `&type=${encodeURIComponent(type)}` : "");
   const json = await request(path, {
     method: "GET",
     token,

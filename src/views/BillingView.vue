@@ -340,6 +340,11 @@
         <template v-if="activeNav === 'mapping'">
           <div class="page-header">
             <h1>会员积分映射</h1>
+            <div class="actions">
+              <button class="btn primary" @click="openMappingCreate">
+                新增映射
+              </button>
+            </div>
           </div>
           <div class="table">
             <div class="mapping-thead">
@@ -472,6 +477,16 @@
                       />
                       <span v-else>{{ mm.durationValue }}</span>
                     </div>
+                    <div class="detail-item full-width">
+                      <div class="detail-actions">
+                        <button
+                          class="btn danger"
+                          @click.stop="deleteMapping(mm)"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </template>
@@ -489,8 +504,8 @@
                 class="input"
                 @change="loadMaterials"
               >
-                <option value="COMMUNITY">COMMUNITY</option>
-                <option value="PERSONAL">PERSONAL</option>
+                <option value="COMMUNITY">公共</option>
+                <option value="PERSONAL">个人</option>
               </select>
               <input
                 v-model="materialsFilters.context"
@@ -533,7 +548,15 @@
                   <div class="td">{{ m.id }}</div>
                   <div class="td">{{ m.name }}</div>
                   <div class="td">{{ m.category }}</div>
-                  <div class="td">{{ m.type }}</div>
+                  <div class="td">
+                    {{
+                      String(m.type).toUpperCase() === "COMMUNITY"
+                        ? "公共"
+                        : String(m.type).toUpperCase() === "PERSONAL"
+                        ? "个人"
+                        : m.type
+                    }}
+                  </div>
                   <div class="td">{{ formatTime(m.createTime) }}</div>
                   <div class="td ops">
                     <span
@@ -584,7 +607,15 @@
                     </div>
                     <div class="detail-item">
                       <label>类型</label>
-                      <span>{{ m.type }}</span>
+                      <span>
+                        {{
+                          String(m.type).toUpperCase() === "COMMUNITY"
+                            ? "公共"
+                            : String(m.type).toUpperCase() === "PERSONAL"
+                            ? "个人"
+                            : m.type
+                        }}
+                      </span>
                     </div>
                     <div class="detail-item">
                       <label>用户ID</label>
@@ -644,17 +675,17 @@
                     </div>
                     <div class="detail-item full-width">
                       <div class="detail-actions">
-                        <button
+                        <!-- <button
                           class="btn success"
                           @click.stop="publishMaterialItem(m.id)"
                         >
                           上架公共素材
-                        </button>
+                        </button> -->
                         <button
                           class="btn danger"
                           @click.stop="removeMaterialItem(m.id)"
                         >
-                          下架素材
+                          删除
                         </button>
                       </div>
                     </div>
@@ -740,6 +771,12 @@
                       <label>用户ID</label>
                       <span>{{
                         (w._detail && w._detail.userId) || w.userId
+                      }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <label>昵称</label>
+                      <span>{{
+                        (w._detail && w._detail.nickname) || w.nickname
                       }}</span>
                     </div>
                     <div class="detail-item">
@@ -898,12 +935,6 @@
                         formatTime(
                           (w._detail && w._detail.updateTime) || w.updateTime
                         )
-                      }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <label>昵称</label>
-                      <span>{{
-                        (w._detail && w._detail.nickname) || w.nickname
                       }}</span>
                     </div>
                     <div class="detail-item">
@@ -1338,6 +1369,10 @@
                       <span>{{ p.userId }}</span>
                     </div>
                     <div class="detail-item">
+                      <label>昵称</label>
+                      <span>{{ p.nickname }}</span>
+                    </div>
+                    <div class="detail-item">
                       <label>扣除积分</label>
                       <span>{{ p.deductedPoints }}</span>
                     </div>
@@ -1369,10 +1404,7 @@
                       <label>更新时间</label>
                       <span>{{ formatTime(p.updateTime) }}</span>
                     </div>
-                    <div class="detail-item">
-                      <label>昵称</label>
-                      <span>{{ p.nickname }}</span>
-                    </div>
+
                     <div class="detail-item">
                       <label>头像</label>
                       <span>
@@ -1872,6 +1904,70 @@
               :disabled="loading"
             >
               上架
+            </button>
+          </div>
+          <div v-if="error" class="error">{{ error }}</div>
+        </div>
+      </div>
+    </div>
+    <div
+      v-if="showMappingCreate"
+      class="modal-backdrop"
+      @click.self="closeMappingCreate"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <div class="title">新建会员积分映射</div>
+          <button class="close" @click="closeMappingCreate">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form">
+            <div class="field">
+              <label class="label">会员等级</label>
+              <input
+                v-model="mappingCreateForm.membership_level"
+                class="input"
+                type="text"
+              />
+            </div>
+            <div class="field">
+              <label class="label">付费金额</label>
+              <input
+                v-model.number="mappingCreateForm.pay_fee"
+                class="input"
+                type="number"
+              />
+            </div>
+            <div class="field">
+              <label class="label">积分</label>
+              <input
+                v-model.number="mappingCreateForm.points"
+                class="input"
+                type="number"
+              />
+            </div>
+            <div class="field">
+              <label class="label">时长类型</label>
+              <input
+                v-model.number="mappingCreateForm.duration_type"
+                class="input"
+                type="number"
+              />
+            </div>
+            <div class="field">
+              <label class="label">时长值</label>
+              <input
+                v-model.number="mappingCreateForm.duration_value"
+                class="input"
+                type="number"
+              />
+            </div>
+            <button
+              class="btn primary"
+              @click="submitMappingCreate"
+              :disabled="loading"
+            >
+              创建
             </button>
           </div>
           <div v-if="error" class="error">{{ error }}</div>

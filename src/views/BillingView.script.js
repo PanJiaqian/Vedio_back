@@ -13,6 +13,8 @@ import {
   getPointsList,
   getMembershipMapping,
   updateMembershipMapping,
+  deleteMembershipMapping,
+  createMembershipMapping,
   getMaterialsList,
   removeMaterial,
   publishMaterial,
@@ -101,6 +103,14 @@ export default {
         duration_type: 1,
         duration_value: 1,
       },
+      showMappingCreate: false,
+      mappingCreateForm: {
+        membership_level: "",
+        pay_fee: 0,
+        points: 0,
+        duration_type: 1,
+        duration_value: 1,
+      },
       materialsFilters: {
         category: "",
         type: "COMMUNITY",
@@ -131,15 +141,21 @@ export default {
     token(newToken) {
       if (newToken) {
         this.error = "";
-        this.loadList();
+        this.setNav(this.activeNav);
       } else {
-        this.items = [];
         this.error = "请先登录以获取配置列表";
+        this.clearActiveData();
       }
     },
   },
   created() {
     this.loadList();
+  },
+  mounted() {
+    this.refreshEllipsisTitles();
+  },
+  updated() {
+    this.refreshEllipsisTitles();
   },
   methods: {
     async loadList() {
@@ -383,6 +399,7 @@ export default {
     startMappingInline(mm, field) {
       mm._editingField = field;
       this.mappingForm = {
+        id: String(mm.id || ""),
         membership_level: mm.membershipLevel || "",
         pay_fee: Number(mm.payFee || 0),
         points: Number(mm.points || 0),
@@ -397,6 +414,30 @@ export default {
           input.focus();
         }
       });
+    },
+    refreshEllipsisTitles() {
+      try {
+        const root = this.$el;
+        if (!root) return;
+        const nodes = root.querySelectorAll(".td, .th");
+        nodes.forEach((n) => {
+          const text = (n.textContent || "").trim();
+          if (text) n.setAttribute("title", text);
+        });
+      } catch (e) {
+        return;
+      }
+    },
+    clearActiveData() {
+      this.items = [];
+      this.users = [];
+      this.memberships = [];
+      this.orders = [];
+      this.recharges = [];
+      this.points = [];
+      this.mapping = [];
+      this.materials = [];
+      this.works = [];
     },
     async stopMappingInline(mm) {
       if (!mm._editingField) return;
@@ -414,6 +455,64 @@ export default {
         mm.durationValue = this.mappingForm.duration_value;
       } catch (e) {
         this.error = e && e.message ? e.message : "更新会员积分映射失败";
+      }
+    },
+    openMappingCreate() {
+      this.showMappingCreate = true;
+      this.mappingCreateForm = {
+        membership_level: "",
+        pay_fee: 0,
+        points: 0,
+        duration_type: 1,
+        duration_value: 1,
+      };
+    },
+    closeMappingCreate() {
+      this.showMappingCreate = false;
+    },
+    async submitMappingCreate() {
+      if (!this.token) {
+        this.error = "请先登录以新建会员积分映射";
+        return;
+      }
+      try {
+        await createMembershipMapping(this.mappingCreateForm, this.token);
+        this.showMappingCreate = false;
+        await this.loadMapping();
+      } catch (e) {
+        this.error = e && e.message ? e.message : "新建会员积分映射失败";
+      }
+    },
+    async saveMapping(mm) {
+      if (!this.token) {
+        this.error = "请先登录以更新会员积分映射";
+        return;
+      }
+      const payload = {
+        id: String((mm && mm.id) || ""),
+        membership_level: (mm && mm.membershipLevel) || "",
+        pay_fee: Number((mm && mm.payFee) || 0),
+        points: Number((mm && mm.points) || 0),
+        duration_type: Number((mm && mm.durationType) || 1),
+        duration_value: Number((mm && mm.durationValue) || 1),
+      };
+      try {
+        await updateMembershipMapping(payload, this.token);
+        await this.loadMapping();
+      } catch (e) {
+        this.error = e && e.message ? e.message : "更新会员积分映射失败";
+      }
+    },
+    async deleteMapping(mm) {
+      if (!this.token) {
+        this.error = "请先登录以下架会员映射";
+        return;
+      }
+      try {
+        await deleteMembershipMapping(mm.id, this.token);
+        await this.loadMapping();
+      } catch (e) {
+        this.error = e && e.message ? e.message : "下架会员映射失败";
       }
     },
     async loadMaterials() {
@@ -439,11 +538,15 @@ export default {
         context: this.materialsFilters.context || "",
         page: this.materialsFilters.page,
         size: this.materialsFilters.size,
+        type: this.materialsFilters.type,
       };
       try {
         const data = await searchMaterials(params, this.token);
         if (seq !== this.materialsSearchSeq) return;
-        const list = (data && data.items) || [];
+        const t = String(this.materialsFilters.type || "").toUpperCase();
+        const list = ((data && data.items) || []).filter(
+          (it) => String(it.type || "").toUpperCase() === t
+        );
         this.materials = this.uniqueById(list);
       } catch (e) {
         this.error = e && e.message ? e.message : "素材搜索失败";
@@ -467,14 +570,14 @@ export default {
     },
     async removeMaterialItem(id) {
       if (!this.token) {
-        this.error = "请先登录以进行下架操作";
+        this.error = "请先登录以进行删除操作";
         return;
       }
       try {
         await removeMaterial(id, this.token);
         await this.loadMaterials();
       } catch (e) {
-        this.error = e && e.message ? e.message : "下架素材失败";
+        this.error = e && e.message ? e.message : "删除素材失败";
       }
     },
     async loadWorks() {
