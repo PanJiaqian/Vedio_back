@@ -12,11 +12,11 @@
 
     <div class="table">
       <div class="users-thead">
-        <div class="th">ID</div>
+        <div class="th" @click="toggleUsersIdSort">ID</div>
         <div class="th">昵称</div>
         <div class="th">语言</div>
         <div class="th">状态</div>
-        <div class="th">创建时间</div>
+        <div class="th" @click="toggleUsersCreateSort">创建时间</div>
         <div class="th">操作</div>
       </div>
       <div v-if="users.length === 0" class="empty">暂无用户</div>
@@ -113,6 +113,8 @@ export default {
         size: 20,
       },
       users: [],
+      usersSortAsc: true,
+      usersIdSortAsc: true,
       showUserDetail: false,
       userDetail: null,
       userStatus: 1,
@@ -148,6 +150,7 @@ export default {
       try {
         const data = await getUsersList(this.usersFilters, this.token);
         this.users = (data && data.items) || [];
+        this.applyUsersSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "用户列表获取失败";
       }
@@ -184,6 +187,27 @@ export default {
     formatTime(val) {
       if (!val) return "";
       return String(val).replace("T", " ").replace("Z", "");
+    },
+    toggleUsersCreateSort() {
+      this.usersSortAsc = !this.usersSortAsc;
+      this.applyUsersSort();
+    },
+    applyUsersSort() {
+      const asc = this.usersSortAsc;
+      this.users = [...(this.users || [])].sort((a, b) => {
+        const ta = new Date(a && a.createTime ? a.createTime : 0).getTime();
+        const tb = new Date(b && b.createTime ? b.createTime : 0).getTime();
+        return asc ? ta - tb : tb - ta;
+      });
+    },
+    toggleUsersIdSort() {
+      this.usersIdSortAsc = !this.usersIdSortAsc;
+      const asc = this.usersIdSortAsc;
+      this.users = [...(this.users || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
     },
   },
 };

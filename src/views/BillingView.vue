@@ -98,7 +98,7 @@
           </div>
           <div class="table">
             <div class="thead">
-              <div class="th">ID</div>
+              <div class="th" @click="togglePricingIdSort">ID</div>
               <div class="th">服务内容</div>
               <div class="th">类型</div>
               <div class="th">功能节点</div>
@@ -348,7 +348,7 @@
           </div>
           <div class="table">
             <div class="mapping-thead">
-              <div class="th">ID</div>
+              <div class="th" @click="toggleMappingIdSort">ID</div>
               <div class="th">会员等级</div>
               <div class="th">付费金额</div>
               <div class="th">积分</div>
@@ -361,7 +361,15 @@
               <template v-for="mm in mapping" :key="mm.id">
                 <div class="mapping-tr" @click="toggleExpand(mm)">
                   <div class="td">{{ mm.id }}</div>
-                  <div class="td">{{ mm.membershipLevel }}</div>
+                  <div class="td">
+                    {{
+                      String(mm.membershipLevel).toUpperCase() === "STANDARD"
+                        ? "标准会员"
+                        : String(mm.membershipLevel).toUpperCase() === "PREMIUM"
+                        ? "高级会员"
+                        : mm.membershipLevel
+                    }}
+                  </div>
                   <div class="td">{{ mm.payFee }}</div>
                   <div class="td">{{ mm.points }}</div>
                   <div class="td">{{ mm.durationType }}</div>
@@ -398,16 +406,29 @@
                       @click.stop="startMappingInline(mm, 'membership_level')"
                     >
                       <label>会员等级</label>
-                      <input
+                      <select
                         v-if="mm._editingField === 'membership_level'"
                         :ref="`mapping-input-${mm.id}-membership_level`"
                         v-model="mappingForm.membership_level"
                         class="inline-input"
                         @blur="stopMappingInline(mm)"
-                        @keyup.enter="stopMappingInline(mm)"
+                        @change="stopMappingInline(mm)"
                         @click.stop
-                      />
-                      <span v-else>{{ mm.membershipLevel }}</span>
+                      >
+                        <option value="STANDARD">标准会员</option>
+                        <option value="PREMIUM">高级会员</option>
+                      </select>
+                      <span v-else>
+                        {{
+                          String(mm.membershipLevel).toUpperCase() ===
+                          "STANDARD"
+                            ? "标准会员"
+                            : String(mm.membershipLevel).toUpperCase() ===
+                              "PREMIUM"
+                            ? "高级会员"
+                            : mm.membershipLevel
+                        }}
+                      </span>
                     </div>
                     <div
                       class="detail-item"
@@ -534,11 +555,11 @@
           </div>
           <div class="table">
             <div class="materials-thead">
-              <div class="th">ID</div>
+              <div class="th" @click="toggleMaterialsIdSort">ID</div>
               <div class="th">名称</div>
               <div class="th">类别</div>
               <div class="th">类型</div>
-              <div class="th">创建时间</div>
+              <div class="th" @click="toggleMaterialsCreateSort">创建时间</div>
               <div class="th">操作</div>
             </div>
             <div v-if="materials.length === 0" class="empty">暂无数据</div>
@@ -729,7 +750,7 @@
               <div class="th">ID</div>
               <div class="th">标题</div>
               <div class="th">时长</div>
-              <div class="th">创建时间</div>
+              <div class="th" @click="toggleWorksCreateSort">创建时间</div>
               <div class="th">操作</div>
             </div>
             <div v-if="works.length === 0" class="empty">暂无数据</div>
@@ -1139,11 +1160,11 @@
           </div>
           <div class="table">
             <div class="users-thead">
-              <div class="th">ID</div>
+              <div class="th" @click="toggleOrdersIdSort">ID</div>
               <div class="th">用户ID</div>
               <div class="th">金额</div>
               <div class="th">类型</div>
-              <div class="th">交易时间</div>
+              <div class="th" @click="toggleOrdersTimeSort">交易时间</div>
               <div class="th">操作</div>
             </div>
             <div v-if="orders.length === 0" class="empty">暂无数据</div>
@@ -1311,12 +1332,12 @@
           </div>
           <div class="table">
             <div class="points-thead">
-              <div class="th">ID</div>
+              <div class="th" @click="togglePointsIdSort">ID</div>
               <div class="th">昵称</div>
               <div class="th">扣除积分</div>
               <div class="th">资源类型</div>
               <div class="th">资源ID</div>
-              <div class="th">扣除时间</div>
+              <div class="th" @click="togglePointsTimeSort">扣除时间</div>
               <div class="th">操作</div>
             </div>
             <div v-if="points.length === 0" class="empty">暂无数据</div>
@@ -1459,11 +1480,11 @@
           </div>
           <div class="table">
             <div class="users-thead">
-              <div class="th">ID</div>
+              <div class="th" @click="toggleRechargesIdSort">ID</div>
               <div class="th">昵称</div>
               <div class="th">充值金额</div>
               <div class="th">充值积分</div>
-              <div class="th">充值时间</div>
+              <div class="th" @click="toggleRechargesTimeSort">充值时间</div>
               <div class="th">操作</div>
             </div>
             <div v-if="recharges.length === 0" class="empty">暂无数据</div>
@@ -1577,11 +1598,11 @@
 
           <div class="table">
             <div class="users-thead">
-              <div class="th">ID</div>
+              <div class="th" @click="toggleUsersIdSort">ID</div>
               <div class="th">昵称</div>
               <div class="th">语言</div>
               <div class="th">状态</div>
-              <div class="th">创建时间</div>
+              <div class="th" @click="toggleUsersCreateSort">创建时间</div>
               <div class="th">操作</div>
             </div>
             <div v-if="users.length === 0" class="empty">暂无用户</div>
@@ -1924,11 +1945,13 @@
           <div class="form">
             <div class="field">
               <label class="label">会员等级</label>
-              <input
+              <select
                 v-model="mappingCreateForm.membership_level"
                 class="input"
-                type="text"
-              />
+              >
+                <option value="STANDARD">标准会员</option>
+                <option value="PREMIUM">高级会员</option>
+              </select>
             </div>
             <div class="field">
               <label class="label">付费金额</label>

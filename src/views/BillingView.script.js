@@ -36,6 +36,7 @@ export default {
         function_node: "",
       },
       items: [],
+      itemsIdSortAsc: true,
       loading: false,
       error: "",
       showDetail: false,
@@ -73,6 +74,8 @@ export default {
         size: 20,
       },
       users: [],
+      usersSortAsc: true,
+      usersIdSortAsc: true,
       membershipsFilters: {
         page: 1,
         size: 20,
@@ -84,18 +87,25 @@ export default {
         size: 20,
       },
       orders: [],
+      ordersSortAsc: true,
+      ordersIdSortAsc: true,
       rechargesFilters: {
         page: 1,
         size: 20,
       },
       recharges: [],
+      rechargesSortAsc: true,
+      rechargesIdSortAsc: true,
       pointsFilters: {
         resourceType: "",
         page: 1,
         size: 20,
       },
       points: [],
+      pointsSortAsc: true,
+      pointsIdSortAsc: true,
       mapping: [],
+      mappingIdSortAsc: true,
       mappingForm: {
         membership_level: "",
         pay_fee: 0,
@@ -120,12 +130,15 @@ export default {
       },
       materials: [],
       materialsSearchSeq: 0,
+      materialsSortAsc: true,
+      materialsIdSortAsc: true,
       worksFilters: {
         page: 1,
         size: 20,
         context: "",
       },
       works: [],
+      worksSortAsc: true,
       activeNav: "pricing",
       previewVisible: false,
       previewType: "",
@@ -262,6 +275,7 @@ export default {
       try {
         const data = await getUsersList(this.usersFilters, this.token);
         this.users = (data && data.items) || [];
+        this.applyUsersSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "用户列表获取失败";
       }
@@ -326,6 +340,7 @@ export default {
       try {
         const data = await getOrderList(this.ordersFilters, this.token);
         this.orders = (data && data.items) || [];
+        this.applyOrdersSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "订单列表获取失败";
       }
@@ -338,6 +353,7 @@ export default {
       try {
         const data = await getRechargeList(this.rechargesFilters, this.token);
         this.recharges = (data && data.items) || [];
+        this.applyRechargesSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "充值记录获取失败";
       }
@@ -350,6 +366,7 @@ export default {
       try {
         const data = await getPointsList(this.pointsFilters, this.token);
         this.points = (data && data.items) || [];
+        this.applyPointsSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "积分扣除记录获取失败";
       }
@@ -523,6 +540,7 @@ export default {
       try {
         const data = await getMaterialsList(this.materialsFilters, this.token);
         this.materials = (data && data.items) || [];
+        this.applyMaterialsSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "素材列表获取失败";
       }
@@ -548,6 +566,7 @@ export default {
           (it) => String(it.type || "").toUpperCase() === t
         );
         this.materials = this.uniqueById(list);
+        this.applyMaterialsSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "素材搜索失败";
       }
@@ -588,6 +607,7 @@ export default {
       try {
         const data = await getCreativeWorksList(this.worksFilters, this.token);
         this.works = (data && data.items) || [];
+        this.applyWorksSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "作品列表获取失败";
       }
@@ -606,6 +626,7 @@ export default {
         const data = await searchCreativeWorks(params, this.token);
         const list = (data && data.items) || [];
         this.works = this.uniqueById(list);
+        this.applyWorksSort();
       } catch (e) {
         this.error = e && e.message ? e.message : "作品搜索失败";
       }
@@ -621,6 +642,149 @@ export default {
         if (s.has(id)) return false;
         s.add(id);
         return true;
+      });
+    },
+    toggleMaterialsCreateSort() {
+      this.materialsSortAsc = !this.materialsSortAsc;
+      this.applyMaterialsSort();
+    },
+    applyMaterialsSort() {
+      const asc = this.materialsSortAsc;
+      this.materials = [...(this.materials || [])].sort((a, b) => {
+        const ta = new Date(a && a.createTime ? a.createTime : 0).getTime();
+        const tb = new Date(b && b.createTime ? b.createTime : 0).getTime();
+        return asc ? ta - tb : tb - ta;
+      });
+    },
+    toggleMaterialsIdSort() {
+      this.materialsIdSortAsc = !this.materialsIdSortAsc;
+      const asc = this.materialsIdSortAsc;
+      this.materials = [...(this.materials || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
+    },
+    toggleWorksCreateSort() {
+      this.worksSortAsc = !this.worksSortAsc;
+      this.applyWorksSort();
+    },
+    applyWorksSort() {
+      const asc = this.worksSortAsc;
+      this.works = [...(this.works || [])].sort((a, b) => {
+        const ta = new Date(a && a.createTime ? a.createTime : 0).getTime();
+        const tb = new Date(b && b.createTime ? b.createTime : 0).getTime();
+        return asc ? ta - tb : tb - ta;
+      });
+    },
+    toggleUsersCreateSort() {
+      this.usersSortAsc = !this.usersSortAsc;
+      this.applyUsersSort();
+    },
+    applyUsersSort() {
+      const asc = this.usersSortAsc;
+      this.users = [...(this.users || [])].sort((a, b) => {
+        const ta = new Date(a && a.createTime ? a.createTime : 0).getTime();
+        const tb = new Date(b && b.createTime ? b.createTime : 0).getTime();
+        return asc ? ta - tb : tb - ta;
+      });
+    },
+    toggleUsersIdSort() {
+      this.usersIdSortAsc = !this.usersIdSortAsc;
+      const asc = this.usersIdSortAsc;
+      this.users = [...(this.users || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
+    },
+    toggleOrdersTimeSort() {
+      this.ordersSortAsc = !this.ordersSortAsc;
+      this.applyOrdersSort();
+    },
+    applyOrdersSort() {
+      const asc = this.ordersSortAsc;
+      this.orders = [...(this.orders || [])].sort((a, b) => {
+        const ta = new Date(
+          a && a.transactionDate ? a.transactionDate : 0
+        ).getTime();
+        const tb = new Date(
+          b && b.transactionDate ? b.transactionDate : 0
+        ).getTime();
+        return asc ? ta - tb : tb - ta;
+      });
+    },
+    toggleOrdersIdSort() {
+      this.ordersIdSortAsc = !this.ordersIdSortAsc;
+      const asc = this.ordersIdSortAsc;
+      this.orders = [...(this.orders || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
+    },
+    toggleRechargesTimeSort() {
+      this.rechargesSortAsc = !this.rechargesSortAsc;
+      this.applyRechargesSort();
+    },
+    applyRechargesSort() {
+      const asc = this.rechargesSortAsc;
+      this.recharges = [...(this.recharges || [])].sort((a, b) => {
+        const ta = new Date(a && a.rechargeDate ? a.rechargeDate : 0).getTime();
+        const tb = new Date(b && b.rechargeDate ? b.rechargeDate : 0).getTime();
+        return asc ? ta - tb : tb - ta;
+      });
+    },
+    toggleRechargesIdSort() {
+      this.rechargesIdSortAsc = !this.rechargesIdSortAsc;
+      const asc = this.rechargesIdSortAsc;
+      this.recharges = [...(this.recharges || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
+    },
+    togglePointsTimeSort() {
+      this.pointsSortAsc = !this.pointsSortAsc;
+      this.applyPointsSort();
+    },
+    applyPointsSort() {
+      const asc = this.pointsSortAsc;
+      this.points = [...(this.points || [])].sort((a, b) => {
+        const ta = new Date(
+          a && a.transactionDate ? a.transactionDate : 0
+        ).getTime();
+        const tb = new Date(
+          b && b.transactionDate ? b.transactionDate : 0
+        ).getTime();
+        return asc ? ta - tb : tb - ta;
+      });
+    },
+    togglePointsIdSort() {
+      this.pointsIdSortAsc = !this.pointsIdSortAsc;
+      const asc = this.pointsIdSortAsc;
+      this.points = [...(this.points || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
+    },
+    togglePricingIdSort() {
+      this.itemsIdSortAsc = !this.itemsIdSortAsc;
+      const asc = this.itemsIdSortAsc;
+      this.items = [...(this.items || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
+    },
+    toggleMappingIdSort() {
+      this.mappingIdSortAsc = !this.mappingIdSortAsc;
+      const asc = this.mappingIdSortAsc;
+      this.mapping = [...(this.mapping || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
       });
     },
     async toggleExpandWork(w) {
