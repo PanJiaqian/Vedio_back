@@ -401,6 +401,11 @@ export default {
       this.pointsFilters.page = next < 1 ? 1 : next;
       this.loadPoints();
     },
+    changeUsersPage(delta) {
+      const next = this.usersFilters.page + delta;
+      this.usersFilters.page = next < 1 ? 1 : next;
+      this.loadUsers();
+    },
     async loadMapping() {
       if (!this.token) {
         this.error = "请先登录以查看会员积分映射";

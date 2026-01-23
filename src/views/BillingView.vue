@@ -1593,6 +1593,20 @@
                 <option :value="1">启用</option>
                 <option :value="0">停用</option>
               </select>
+              <div class="pagination-buttons">
+                <span
+                  >第 {{ usersFilters.page }} 页 / 每页
+                  {{ usersFilters.size }}</span
+                >
+                <button
+                  class="btn"
+                  @click="changeUsersPage(-1)"
+                  :disabled="usersFilters.page === 1"
+                >
+                  上一页
+                </button>
+                <button class="btn" @click="changeUsersPage(1)">下一页</button>
+              </div>
             </div>
           </div>
 

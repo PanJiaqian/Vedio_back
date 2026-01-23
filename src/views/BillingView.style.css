@@ -94,6 +94,12 @@
   align-items: center;
 }
 
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .actions .input {
   width: auto;
   min-width: 120px;

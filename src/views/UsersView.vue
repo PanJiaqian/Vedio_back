@@ -7,6 +7,19 @@
           <option :value="1">启用</option>
           <option :value="0">停用</option>
         </select>
+        <div class="pagination-buttons">
+          <span
+            >第 {{ usersFilters.page }} 页 / 每页 {{ usersFilters.size }}</span
+          >
+          <button
+            class="btn"
+            @click="changeUsersPage(-1)"
+            :disabled="usersFilters.page === 1"
+          >
+            上一页
+          </button>
+          <button class="btn" @click="changeUsersPage(1)">下一页</button>
+        </div>
       </div>
     </div>
 
@@ -155,6 +168,11 @@ export default {
         this.error = e && e.message ? e.message : "用户列表获取失败";
       }
     },
+    changeUsersPage(delta) {
+      const next = this.usersFilters.page + delta;
+      this.usersFilters.page = next < 1 ? 1 : next;
+      this.loadUsers();
+    },
     async openUserDetail(id) {
       this.error = "";
       try {
@@ -243,6 +261,11 @@ export default {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .actions .input {
