@@ -8,10 +8,15 @@ async function request(path, method, data) {
     },
     body: data ? JSON.stringify(data) : undefined,
   });
-  if (!res.ok) {
-    throw new Error("请求失败");
+  let json = null;
+  try {
+    json = await res.json();
+  } catch (e) {
+    json = null;
   }
-  const json = await res.json();
+  if (!res.ok) {
+    throw new Error((json && json.message) || "请求失败");
+  }
   if (!json || typeof json.code === "undefined") {
     throw new Error("响应格式错误");
   }
