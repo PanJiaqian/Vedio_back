@@ -79,10 +79,12 @@
                 class="input"
                 @change="loadList"
               >
+                <option value="all">全部</option>
                 <option value="video">视频</option>
                 <option value="image">图片</option>
               </select>
               <select v-model="filters.status" class="input" @change="loadList">
+                <option value="all">全部</option>
                 <option :value="1">启用</option>
                 <option :value="0">停用</option>
               </select>
@@ -525,6 +527,7 @@
                 class="input"
                 @change="loadMaterials"
               >
+                <option value="all">全部</option>
                 <option value="COMMUNITY">公共</option>
                 <option value="PERSONAL">个人</option>
               </select>
@@ -1040,8 +1043,44 @@
                 <div class="users-tr" @click="toggleExpand(m)">
                   <div class="td">{{ m.id }}</div>
                   <div class="td">{{ m.userId }}</div>
-                  <div class="td">{{ m.membershipLevel || "-" }}</div>
-                  <div class="td">{{ m.status ?? "-" }}</div>
+                  <div class="td">
+                    {{
+                      m.membershipLevel
+                        ? String(m.membershipLevel).toUpperCase() === "STANDARD"
+                          ? "标准会员"
+                          : String(m.membershipLevel).toUpperCase() ===
+                            "PREMIUM"
+                          ? "高级会员"
+                          : m.membershipLevel
+                        : "-"
+                    }}
+                  </div>
+                  <div class="td">
+                    <span
+                      v-if="m.status != null"
+                      :class="[
+                        'subscription-status',
+                        String(m.status).toUpperCase() === 'ACTIVE'
+                          ? 'active'
+                          : String(m.status).toUpperCase() === 'INACTIVE'
+                          ? 'inactive'
+                          : String(m.status).toUpperCase() === 'CANCELLED'
+                          ? 'cancelled'
+                          : '',
+                      ]"
+                    >
+                      {{
+                        String(m.status).toUpperCase() === "ACTIVE"
+                          ? "激活"
+                          : String(m.status).toUpperCase() === "INACTIVE"
+                          ? "过期"
+                          : String(m.status).toUpperCase() === "CANCELLED"
+                          ? "取消"
+                          : m.status
+                      }}
+                    </span>
+                    <span v-else>-</span>
+                  </div>
                   <div class="td">
                     {{ formatTime(m.subscriptionStartDate) }}
                   </div>
@@ -1078,11 +1117,44 @@
                     </div>
                     <div class="detail-item">
                       <label>会员等级</label>
-                      <span>{{ m.membershipLevel || "-" }}</span>
+                      <span>{{
+                        m.membershipLevel
+                          ? String(m.membershipLevel).toUpperCase() ===
+                            "STANDARD"
+                            ? "标准会员"
+                            : String(m.membershipLevel).toUpperCase() ===
+                              "PREMIUM"
+                            ? "高级会员"
+                            : m.membershipLevel
+                          : "-"
+                      }}</span>
                     </div>
                     <div class="detail-item">
                       <label>状态</label>
-                      <span>{{ m.status ?? "-" }}</span>
+                      <span
+                        v-if="m.status != null"
+                        :class="[
+                          'subscription-status',
+                          String(m.status).toUpperCase() === 'ACTIVE'
+                            ? 'active'
+                            : String(m.status).toUpperCase() === 'INACTIVE'
+                            ? 'inactive'
+                            : String(m.status).toUpperCase() === 'CANCELLED'
+                            ? 'cancelled'
+                            : '',
+                        ]"
+                      >
+                        {{
+                          String(m.status).toUpperCase() === "ACTIVE"
+                            ? "激活"
+                            : String(m.status).toUpperCase() === "INACTIVE"
+                            ? "过期"
+                            : String(m.status).toUpperCase() === "CANCELLED"
+                            ? "取消"
+                            : m.status
+                        }}
+                      </span>
+                      <span v-else>-</span>
                     </div>
                     <div class="detail-item">
                       <label>积分余额</label>
@@ -1590,6 +1662,7 @@
                 class="input"
                 @change="loadUsers"
               >
+                <option value="all">全部</option>
                 <option :value="1">启用</option>
                 <option :value="0">停用</option>
               </select>

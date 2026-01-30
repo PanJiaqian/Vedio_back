@@ -4,6 +4,7 @@
       <h1>用户管理</h1>
       <div class="actions">
         <select v-model="usersFilters.status" class="input" @change="loadUsers">
+          <option value="all">全部</option>
           <option :value="1">启用</option>
           <option :value="0">停用</option>
         </select>

@@ -272,6 +272,35 @@
   background: #9ca3af;
 }
 
+.subscription-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.subscription-status.active {
+  background: #ecfdf5;
+  /* border-color: #a7f3d0; */
+  color: #059669;
+}
+
+.subscription-status.inactive {
+  background: #f3f4f6;
+  /* border-color: #e5e7eb; */
+  color: #6b7280;
+}
+
+.subscription-status.cancelled {
+  background: #fef2f2;
+  /* border-color: #fecaca; */
+  color: #dc2626;
+}
+
 /* Modal Overrides */
 .modal {
   width: 600px;
