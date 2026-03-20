@@ -374,8 +374,12 @@
                   </div>
                   <div class="td">{{ mm.payFee }}</div>
                   <div class="td">{{ mm.points }}</div>
-                  <div class="td">{{ mm.durationType }}</div>
-                  <div class="td">{{ mm.durationValue }}</div>
+                  <div class="td">
+                    {{ getDurationTypeLabel(mm.durationType) }}
+                  </div>
+                  <div class="td">
+                    {{ getDurationValueLabel(mm.durationValue) }}
+                  </div>
                   <div class="td ops">
                     <span
                       class="expand-icon"
@@ -471,34 +475,45 @@
                       @click.stop="startMappingInline(mm, 'duration_type')"
                     >
                       <label>时长类型</label>
-                      <input
+                      <select
                         v-if="mm._editingField === 'duration_type'"
                         :ref="`mapping-input-${mm.id}-duration_type`"
                         v-model.number="mappingForm.duration_type"
                         class="inline-input"
-                        type="number"
                         @blur="stopMappingInline(mm)"
-                        @keyup.enter="stopMappingInline(mm)"
+                        @change="stopMappingInline(mm)"
                         @click.stop
-                      />
-                      <span v-else>{{ mm.durationType }}</span>
+                      >
+                        <option :value="1">月度</option>
+                        <option :value="2">季度</option>
+                        <option :value="3">年度</option>
+                        <option :value="4">永久</option>
+                      </select>
+                      <span v-else>{{
+                        getDurationTypeLabel(mm.durationType)
+                      }}</span>
                     </div>
                     <div
                       class="detail-item"
                       @click.stop="startMappingInline(mm, 'duration_value')"
                     >
                       <label>时长值</label>
-                      <input
+                      <select
                         v-if="mm._editingField === 'duration_value'"
                         :ref="`mapping-input-${mm.id}-duration_value`"
                         v-model.number="mappingForm.duration_value"
                         class="inline-input"
-                        type="number"
                         @blur="stopMappingInline(mm)"
-                        @keyup.enter="stopMappingInline(mm)"
+                        @change="stopMappingInline(mm)"
                         @click.stop
-                      />
-                      <span v-else>{{ mm.durationValue }}</span>
+                      >
+                        <option :value="1">月</option>
+                        <option :value="3">季</option>
+                        <option :value="12">年</option>
+                      </select>
+                      <span v-else>{{
+                        getDurationValueLabel(mm.durationValue)
+                      }}</span>
                     </div>
                     <div class="detail-item full-width">
                       <div class="detail-actions">
@@ -2058,19 +2073,26 @@
             </div>
             <div class="field">
               <label class="label">时长类型</label>
-              <input
+              <select
                 v-model.number="mappingCreateForm.duration_type"
                 class="input"
-                type="number"
-              />
+              >
+                <option :value="1">月度</option>
+                <option :value="2">季度</option>
+                <option :value="3">年度</option>
+                <option :value="4">永久</option>
+              </select>
             </div>
             <div class="field">
               <label class="label">时长值</label>
-              <input
+              <select
                 v-model.number="mappingCreateForm.duration_value"
                 class="input"
-                type="number"
-              />
+              >
+                <option :value="1">月</option>
+                <option :value="3">季</option>
+                <option :value="12">年</option>
+              </select>
             </div>
             <button
               class="btn primary"

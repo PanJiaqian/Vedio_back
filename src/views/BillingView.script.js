@@ -525,6 +525,21 @@ export default {
         this.error = e && e.message ? e.message : "更新会员积分映射失败";
       }
     },
+    getDurationTypeLabel(val) {
+      const key = Number(val);
+      if (key === 1) return "月度";
+      if (key === 2) return "季度";
+      if (key === 3) return "年度";
+      if (key === 4) return "永久";
+      return val ?? "";
+    },
+    getDurationValueLabel(val) {
+      const key = Number(val);
+      if (key === 1) return "月";
+      if (key === 3) return "季";
+      if (key === 12) return "年";
+      return val ?? "";
+    },
     async deleteMapping(mm) {
       if (!this.token) {
         this.error = "请先登录以下架会员映射";
