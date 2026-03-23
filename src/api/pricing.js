@@ -123,6 +123,24 @@ export async function getMembershipList(params, token) {
   return json.data;
 }
 
+export async function updateMembership(payload, token) {
+  const json = await request("/admin/v1/memberships/update", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return json.data;
+}
+
+export async function createMembership(payload, token) {
+  const json = await request("/admin/v1/memberships/create", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return json.data;
+}
+
 export async function getOrderList(params, token) {
   const json = await request("/admin/v1/orders", {
     method: "GET",
@@ -305,5 +323,42 @@ export async function searchCreativeWorks(params, token) {
     method: "GET",
     token,
   });
+  return json.data;
+}
+
+export async function getPointsPackages(token) {
+  const json = await request("/admin/v1/points-package", {
+    method: "GET",
+    token,
+  });
+  return json.data;
+}
+
+export async function createPointsPackage(payload, token) {
+  const json = await request("/admin/v1/points-package/create", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return json.data;
+}
+
+export async function updatePointsPackage(payload, token) {
+  const json = await request("/admin/v1/points-package/update", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return json.data;
+}
+
+export async function deletePointsPackage(id, token) {
+  const json = await request(
+    `/admin/v1/points-package/delete/${encodeURIComponent(id)}`,
+    {
+      method: "POST",
+      token,
+    }
+  );
   return json.data;
 }

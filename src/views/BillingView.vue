@@ -46,6 +46,13 @@
           积分扣除记录
         </div>
         <div
+          :class="['menu-item', activeNav === 'pointsPackage' ? 'active' : '']"
+          @click="setNav('pointsPackage')"
+        >
+          <span class="icon">📦</span>
+          积分套餐管理
+        </div>
+        <div
           :class="['menu-item', activeNav === 'mapping' ? 'active' : '']"
           @click="setNav('mapping')"
         >
@@ -1018,6 +1025,9 @@
           <div class="page-header">
             <h1>会员订阅列表</h1>
             <div class="actions">
+              <button class="btn primary" @click="openMembershipCreate">
+                新增会员
+              </button>
               <input
                 v-model="membershipsFilters.context"
                 class="input search-input"
@@ -1130,9 +1140,27 @@
                       <label>用户ID</label>
                       <span>{{ m.userId }}</span>
                     </div>
-                    <div class="detail-item">
+                    <div
+                      class="detail-item"
+                      @click.stop="startMembershipInline(m, 'membershipLevel')"
+                    >
                       <label>会员等级</label>
-                      <span>{{
+                      <select
+                        v-if="m._editingField === 'membershipLevel'"
+                        :ref="`membership-input-${m.id}-membershipLevel`"
+                        v-model="membershipForm.membershipLevel"
+                        class="inline-input"
+                        @blur="stopMembershipInline(m)"
+                        @change="stopMembershipInline(m)"
+                        @click.stop
+                      >
+                        <option value="FREE">免费会员</option>
+                        <option value="STANDARD">标准会员</option>
+                        <option value="PREMIUM">高级会员</option>
+                        <option value="PRO">PRO会员</option>
+                        <option value="MAX">MAX会员</option>
+                      </select>
+                      <span v-else>{{
                         m.membershipLevel
                           ? String(m.membershipLevel).toUpperCase() ===
                             "STANDARD"
@@ -1144,10 +1172,26 @@
                           : "-"
                       }}</span>
                     </div>
-                    <div class="detail-item">
+                    <div
+                      class="detail-item"
+                      @click.stop="startMembershipInline(m, 'status')"
+                    >
                       <label>状态</label>
+                      <select
+                        v-if="m._editingField === 'status'"
+                        :ref="`membership-input-${m.id}-status`"
+                        v-model="membershipForm.status"
+                        class="inline-input"
+                        @blur="stopMembershipInline(m)"
+                        @change="stopMembershipInline(m)"
+                        @click.stop
+                      >
+                        <option value="ACTIVE">激活</option>
+                        <option value="INACTIVE">过期</option>
+                        <option value="CANCELLED">取消</option>
+                      </select>
                       <span
-                        v-if="m.status != null"
+                        v-else-if="m.status != null"
                         :class="[
                           'subscription-status',
                           String(m.status).toUpperCase() === 'ACTIVE'
@@ -1171,17 +1215,49 @@
                       </span>
                       <span v-else>-</span>
                     </div>
-                    <div class="detail-item">
+                    <div
+                      class="detail-item"
+                      @click.stop="startMembershipInline(m, 'pointsBalance')"
+                    >
                       <label>积分余额</label>
-                      <span>{{ m.pointsBalance }}</span>
+                      <input
+                        v-if="m._editingField === 'pointsBalance'"
+                        :ref="`membership-input-${m.id}-pointsBalance`"
+                        v-model.number="membershipForm.pointsBalance"
+                        class="inline-input"
+                        type="number"
+                        step="0.01"
+                        @blur="stopMembershipInline(m)"
+                        @keyup.enter="stopMembershipInline(m)"
+                        @click.stop
+                      />
+                      <span v-else>{{ m.pointsBalance }}</span>
                     </div>
                     <div class="detail-item">
                       <label>开始时间</label>
                       <span>{{ formatTime(m.subscriptionStartDate) }}</span>
                     </div>
-                    <div class="detail-item">
+                    <div
+                      class="detail-item"
+                      @click.stop="
+                        startMembershipInline(m, 'subscriptionEndDate')
+                      "
+                    >
                       <label>结束时间</label>
-                      <span>{{ formatTime(m.subscriptionEndDate) }}</span>
+                      <input
+                        v-if="m._editingField === 'subscriptionEndDate'"
+                        :ref="`membership-input-${m.id}-subscriptionEndDate`"
+                        v-model="membershipForm.subscriptionEndDate"
+                        class="inline-input"
+                        type="datetime-local"
+                        step="1"
+                        @blur="stopMembershipInline(m)"
+                        @keyup.enter="stopMembershipInline(m)"
+                        @click.stop
+                      />
+                      <span v-else>{{
+                        formatTime(m.subscriptionEndDate)
+                      }}</span>
                     </div>
                     <div class="detail-item">
                       <label>创建时间</label>
@@ -1380,6 +1456,99 @@
                       <label>用户状态</label>
                       <span>{{ o.userStatus === 1 ? "启用" : "停用" }}</span>
                     </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Points Packages View -->
+        <template v-if="activeNav === 'pointsPackage'">
+          <div class="page-header">
+            <h1>积分套餐管理</h1>
+            <div class="actions">
+              <button class="btn primary" @click="openPointsPackageCreate">
+                创建套餐
+              </button>
+            </div>
+          </div>
+          <div class="table">
+            <div class="points-package-thead">
+              <div class="th" @click="togglePointsPackageIdSort">ID</div>
+              <div class="th">支付金额</div>
+              <div class="th">积分数量</div>
+              <div class="th">折扣率</div>
+              <div class="th">创建人ID</div>
+              <div class="th">创建时间</div>
+              <div class="th">更新时间</div>
+              <div class="th">操作</div>
+            </div>
+            <div v-if="pointsPackages.length === 0" class="empty">暂无数据</div>
+            <div v-else class="tbody">
+              <template v-for="pkg in pointsPackages" :key="pkg.id">
+                <div class="points-package-tr">
+                  <div class="td">{{ pkg.id }}</div>
+                  <div
+                    class="td highlight"
+                    @click.stop="startPointsPackageInline(pkg, 'pay_amount')"
+                  >
+                    <input
+                      v-if="pkg._editingField === 'pay_amount'"
+                      :ref="`pkg-input-${pkg.id}-pay_amount`"
+                      v-model.number="pointsPackageForm.pay_amount"
+                      class="inline-input"
+                      type="number"
+                      step="0.01"
+                      @blur="stopPointsPackageInline(pkg)"
+                      @keyup.enter="stopPointsPackageInline(pkg)"
+                      @click.stop
+                    />
+                    <span v-else>￥{{ pkg.payAmount }}</span>
+                  </div>
+                  <div
+                    class="td"
+                    @click.stop="startPointsPackageInline(pkg, 'points_amount')"
+                  >
+                    <input
+                      v-if="pkg._editingField === 'points_amount'"
+                      :ref="`pkg-input-${pkg.id}-points_amount`"
+                      v-model.number="pointsPackageForm.points_amount"
+                      class="inline-input"
+                      type="number"
+                      @blur="stopPointsPackageInline(pkg)"
+                      @keyup.enter="stopPointsPackageInline(pkg)"
+                      @click.stop
+                    />
+                    <span v-else>{{ pkg.pointsAmount }}</span>
+                  </div>
+                  <div
+                    class="td"
+                    @click.stop="startPointsPackageInline(pkg, 'discount_rate')"
+                  >
+                    <input
+                      v-if="pkg._editingField === 'discount_rate'"
+                      :ref="`pkg-input-${pkg.id}-discount_rate`"
+                      v-model.number="pointsPackageForm.discount_rate"
+                      class="inline-input"
+                      type="number"
+                      step="0.01"
+                      @blur="stopPointsPackageInline(pkg)"
+                      @keyup.enter="stopPointsPackageInline(pkg)"
+                      @click.stop
+                    />
+                    <span v-else>{{ pkg.discountRate }}%</span>
+                  </div>
+                  <div class="td">{{ pkg.creatorId }}</div>
+                  <div class="td">{{ formatTime(pkg.createTime) }}</div>
+                  <div class="td">{{ formatTime(pkg.updateTime) }}</div>
+                  <div class="td ops">
+                    <button
+                      class="btn danger"
+                      @click.stop="confirmDeletePointsPackage(pkg.id)"
+                    >
+                      删除
+                    </button>
                   </div>
                 </div>
               </template>
@@ -2106,6 +2275,156 @@
         </div>
       </div>
     </div>
+    <div
+      v-if="showMembershipCreate"
+      class="modal-backdrop"
+      @click.self="closeMembershipCreate"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <div class="title">新增会员订阅</div>
+          <button class="close" @click="closeMembershipCreate">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form">
+            <div class="field">
+              <label class="label"
+                >用户ID <span style="color: red">*</span></label
+              >
+              <input
+                v-model="membershipCreateForm.userId"
+                class="input"
+                type="number"
+                placeholder="请输入要绑定会员的用户ID"
+              />
+            </div>
+            <div class="field">
+              <label class="label"
+                >会员等级 <span style="color: red">*</span></label
+              >
+              <select
+                v-model="membershipCreateForm.membershipLevel"
+                class="input"
+              >
+                <option value="FREE">免费会员 (FREE)</option>
+                <option value="STANDARD">标准会员 (STANDARD)</option>
+                <option value="PREMIUM">高级会员 (PREMIUM)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label"
+                >结束时间 <span style="color: red">*</span></label
+              >
+              <input
+                v-model="membershipCreateForm.subscriptionEndDate"
+                class="input"
+                type="datetime-local"
+                step="1"
+              />
+            </div>
+            <div class="field">
+              <label class="label">积分余额</label>
+              <input
+                v-model.number="membershipCreateForm.pointsBalance"
+                class="input"
+                type="number"
+                step="0.01"
+                placeholder="默认为 0"
+              />
+            </div>
+            <button
+              class="btn primary"
+              @click="submitMembershipCreate"
+              :disabled="loading"
+            >
+              创建
+            </button>
+          </div>
+          <div v-if="error" class="error">{{ error }}</div>
+        </div>
+      </div>
+    </div>
+    <div
+      v-if="showPointsPackageCreate"
+      class="modal-backdrop"
+      @click.self="closePointsPackageCreate"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <div class="title">创建积分套餐</div>
+          <button class="close" @click="closePointsPackageCreate">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form">
+            <div class="field">
+              <label class="label"
+                >支付金额 <span style="color: red">*</span></label
+              >
+              <input
+                v-model.number="pointsPackageCreateForm.pay_amount"
+                class="input"
+                type="number"
+                step="0.01"
+              />
+            </div>
+            <div class="field">
+              <label class="label"
+                >积分数量 <span style="color: red">*</span></label
+              >
+              <input
+                v-model.number="pointsPackageCreateForm.points_amount"
+                class="input"
+                type="number"
+              />
+            </div>
+            <div class="field">
+              <label class="label"
+                >折扣率 (%) <span style="color: red">*</span></label
+              >
+              <input
+                v-model.number="pointsPackageCreateForm.discount_rate"
+                class="input"
+                type="number"
+                step="0.01"
+              />
+            </div>
+            <button
+              class="btn primary"
+              @click="submitPointsPackageCreate"
+              :disabled="loading"
+            >
+              创建
+            </button>
+          </div>
+          <div v-if="error" class="error">{{ error }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Points Package Delete Confirm Modal -->
+    <div
+      v-if="showPointsPackageDeleteConfirm"
+      class="modal-backdrop"
+      @click.self="cancelDeletePointsPackage"
+    >
+      <div class="modal confirm-modal">
+        <div class="modal-header">
+          <div class="title">确认删除</div>
+          <button class="close" @click="cancelDeletePointsPackage">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="confirm-text">确定要删除该积分套餐吗？此操作不可恢复。</p>
+          <div class="confirm-actions">
+            <button class="btn" @click="cancelDeletePointsPackage">取消</button>
+            <button class="btn danger" @click="deletePointsPackageItem">
+              确认删除
+            </button>
+          </div>
+          <div v-if="error" class="error">{{ error }}</div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="previewVisible" class="preview-overlay">
       <img :src="previewSrc" class="preview-img" />
       <button class="preview-close" @click="closePreview">×</button>

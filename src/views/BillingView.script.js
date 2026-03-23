@@ -8,6 +8,8 @@ import {
   getUsersList,
   updateUserStatus,
   getMembershipList,
+  updateMembership,
+  createMembership,
   getOrderList,
   getRechargeList,
   getPointsList,
@@ -25,6 +27,10 @@ import {
   searchMemberships,
   searchMaterials,
   searchCreativeWorks,
+  getPointsPackages,
+  createPointsPackage,
+  updatePointsPackage,
+  deletePointsPackage,
 } from "@/api/pricing";
 export default {
   name: "BillingView",
@@ -104,6 +110,22 @@ export default {
       points: [],
       pointsSortAsc: true,
       pointsIdSortAsc: true,
+      pointsPackages: [],
+      pointsPackageIdSortAsc: true,
+      showPointsPackageCreate: false,
+      showPointsPackageDeleteConfirm: false,
+      pointsPackageToDelete: null,
+      pointsPackageCreateForm: {
+        pay_amount: 0,
+        points_amount: 0,
+        discount_rate: 100,
+      },
+      pointsPackageForm: {
+        id: "",
+        pay_amount: 0,
+        points_amount: 0,
+        discount_rate: 100,
+      },
       mapping: [],
       mappingIdSortAsc: true,
       mappingForm: {
@@ -112,6 +134,20 @@ export default {
         points: 0,
         duration_type: 1,
         duration_value: 1,
+      },
+      membershipForm: {
+        id: "",
+        membershipLevel: "",
+        subscriptionEndDate: "",
+        status: "",
+        pointsBalance: 0,
+      },
+      showMembershipCreate: false,
+      membershipCreateForm: {
+        userId: "",
+        membershipLevel: "STANDARD",
+        subscriptionEndDate: "",
+        pointsBalance: 0,
       },
       showMappingCreate: false,
       mappingCreateForm: {
@@ -288,6 +324,7 @@ export default {
       else if (name === "orders") this.loadOrders();
       else if (name === "recharges") this.loadRecharges();
       else if (name === "points") this.loadPoints();
+      else if (name === "pointsPackage") this.loadPointsPackages();
       else if (name === "mapping") this.loadMapping();
       else if (name === "materials") this.loadMaterials();
       else if (name === "works") this.loadWorks();
@@ -309,6 +346,71 @@ export default {
         this.memberships = (data && data.items) || [];
       } catch (e) {
         this.error = e && e.message ? e.message : "会员订阅列表获取失败";
+      }
+    },
+    startMembershipInline(m, field) {
+      m._editingField = field;
+
+      let endDate = m.subscriptionEndDate || "";
+      if (endDate) {
+        endDate = String(endDate).replace("Z", "");
+        if (endDate.length > 19) {
+          endDate = endDate.substring(0, 19);
+        }
+      }
+
+      this.membershipForm = {
+        id: m.id,
+        membershipLevel: m.membershipLevel || "",
+        subscriptionEndDate: endDate,
+        status: m.status || "",
+        pointsBalance: m.pointsBalance || 0,
+      };
+      this.$nextTick(() => {
+        const input = this.$refs[`membership-input-${m.id}-${field}`];
+        if (input && input[0]) {
+          input[0].focus();
+        } else if (input) {
+          input.focus();
+        }
+      });
+    },
+    async stopMembershipInline(m) {
+      if (!m._editingField) return;
+      m._editingField = null;
+      if (!this.token) {
+        this.error = "请先登录以更新会员订阅记录";
+        return;
+      }
+      try {
+        const payload = {
+          id: this.membershipForm.id,
+        };
+        // 只有修改的字段才传给后端，虽然接口说传null不更新，但安全起见可以都传
+        payload.membershipLevel = this.membershipForm.membershipLevel || null;
+
+        let endDate = this.membershipForm.subscriptionEndDate || null;
+        if (endDate && endDate.length === 16) {
+          endDate += ":00";
+        }
+        payload.subscriptionEndDate = endDate;
+
+        payload.status = this.membershipForm.status || null;
+        payload.pointsBalance =
+          this.membershipForm.pointsBalance !== "" &&
+          this.membershipForm.pointsBalance !== null
+            ? Number(this.membershipForm.pointsBalance)
+            : null;
+
+        await updateMembership(payload, this.token);
+
+        // 更新本地数据
+        m.membershipLevel = this.membershipForm.membershipLevel;
+        m.subscriptionEndDate = endDate;
+        m.status = this.membershipForm.status;
+        m.pointsBalance = this.membershipForm.pointsBalance;
+      } catch (e) {
+        this.error = e && e.message ? e.message : "更新会员订阅记录失败";
       }
     },
     async doMembershipsSearch() {
@@ -370,6 +472,107 @@ export default {
       } catch (e) {
         this.error = e && e.message ? e.message : "积分扣除记录获取失败";
       }
+    },
+    async loadPointsPackages() {
+      if (!this.token) {
+        this.error = "请先登录以查看积分套餐";
+        return;
+      }
+      try {
+        const data = await getPointsPackages(this.token);
+        this.pointsPackages = data || [];
+        this.applyPointsPackageSort();
+      } catch (e) {
+        this.error = e && e.message ? e.message : "积分套餐获取失败";
+      }
+    },
+    openPointsPackageCreate() {
+      this.pointsPackageCreateForm = {
+        pay_amount: 0,
+        points_amount: 0,
+        discount_rate: 100,
+      };
+      this.showPointsPackageCreate = true;
+    },
+    closePointsPackageCreate() {
+      this.showPointsPackageCreate = false;
+    },
+    async submitPointsPackageCreate() {
+      this.error = "";
+      try {
+        await createPointsPackage(this.pointsPackageCreateForm, this.token);
+        this.showPointsPackageCreate = false;
+        await this.loadPointsPackages();
+      } catch (e) {
+        this.error = e && e.message ? e.message : "创建积分套餐失败";
+      }
+    },
+    confirmDeletePointsPackage(id) {
+      this.pointsPackageToDelete = id;
+      this.showPointsPackageDeleteConfirm = true;
+    },
+    cancelDeletePointsPackage() {
+      this.showPointsPackageDeleteConfirm = false;
+      this.pointsPackageToDelete = null;
+    },
+    async deletePointsPackageItem() {
+      if (!this.token) {
+        this.error = "请先登录";
+        return;
+      }
+      try {
+        await deletePointsPackage(this.pointsPackageToDelete, this.token);
+        this.showPointsPackageDeleteConfirm = false;
+        this.pointsPackageToDelete = null;
+        await this.loadPointsPackages();
+      } catch (e) {
+        this.error = e && e.message ? e.message : "删除失败";
+      }
+    },
+    startPointsPackageInline(pkg, field) {
+      pkg._editingField = field;
+      this.pointsPackageForm = {
+        id: String(pkg.id || ""),
+        pay_amount: Number(pkg.payAmount || 0),
+        points_amount: Number(pkg.pointsAmount || 0),
+        discount_rate: Number(pkg.discountRate || 100),
+      };
+      this.$nextTick(() => {
+        const input = this.$refs[`pkg-input-${pkg.id}-${field}`];
+        if (input && input[0]) {
+          input[0].focus();
+        } else if (input) {
+          input.focus();
+        }
+      });
+    },
+    async stopPointsPackageInline(pkg) {
+      if (!pkg._editingField) return;
+      pkg._editingField = null;
+      if (!this.token) {
+        this.error = "请先登录";
+        return;
+      }
+      try {
+        await updatePointsPackage(this.pointsPackageForm, this.token);
+        pkg.payAmount = this.pointsPackageForm.pay_amount;
+        pkg.pointsAmount = this.pointsPackageForm.points_amount;
+        pkg.discountRate = this.pointsPackageForm.discount_rate;
+      } catch (e) {
+        this.error = e && e.message ? e.message : "更新积分套餐失败";
+      }
+    },
+    togglePointsPackageIdSort() {
+      this.pointsPackageIdSortAsc = !this.pointsPackageIdSortAsc;
+      this.applyPointsPackageSort();
+    },
+    applyPointsPackageSort() {
+      const asc = this.pointsPackageIdSortAsc;
+      this.pointsPackages = [...(this.pointsPackages || [])].sort((a, b) => {
+        const ia = Number(a && a.id ? a.id : 0);
+        const ib = Number(b && b.id ? b.id : 0);
+        return asc ? ia - ib : ib - ia;
+      });
     },
     changeMaterialsPage(delta) {
       const next = this.materialsFilters.page + delta;
@@ -457,6 +660,7 @@ export default {
       this.orders = [];
       this.recharges = [];
       this.points = [];
+      this.pointsPackages = [];
       this.mapping = [];
       this.materials = [];
       this.works = [];
@@ -976,6 +1180,50 @@ export default {
       this.previewVisible = false;
       this.previewSrc = "";
       this.previewType = "";
+    },
+    openMembershipCreate() {
+      this.membershipCreateForm = {
+        userId: "",
+        membershipLevel: "STANDARD",
+        subscriptionEndDate: "",
+        pointsBalance: 0,
+      };
+      this.showMembershipCreate = true;
+    },
+    closeMembershipCreate() {
+      this.showMembershipCreate = false;
+    },
+    async submitMembershipCreate() {
+      if (!this.membershipCreateForm.userId) {
+        alert("请输入用户ID");
+        return;
+      }
+      if (!this.membershipCreateForm.subscriptionEndDate) {
+        alert("请选择结束时间");
+        return;
+      }
+      if (!this.token) {
+        this.error = "请先登录";
+        return;
+      }
+      try {
+        let endDateStr = this.membershipCreateForm.subscriptionEndDate;
+        // 如果用户只选到分钟，比如 "2026-12-31T23:59"，补充秒数
+        if (endDateStr.length === 16) {
+          endDateStr += ":00";
+        }
+        const payload = {
+          userId: Number(this.membershipCreateForm.userId),
+          membershipLevel: this.membershipCreateForm.membershipLevel,
+          subscriptionEndDate: endDateStr,
+          pointsBalance: Number(this.membershipCreateForm.pointsBalance) || 0,
+        };
+        await createMembership(payload, this.token);
+        this.closeMembershipCreate();
+        this.loadMemberships();
+      } catch (e) {
+        alert(e && e.message ? e.message : "创建失败");
+      }
     },
   },
 };

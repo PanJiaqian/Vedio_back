@@ -307,6 +307,23 @@
   max-width: 90vw;
 }
 
+.confirm-modal {
+  width: 400px;
+}
+
+.confirm-text {
+  font-size: 16px;
+  color: var(--text-main);
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
 .detail-row {
   display: flex;
   justify-content: space-between;
@@ -518,6 +535,33 @@
 }
 
 .points-tr:last-child {
+  border-bottom: none;
+}
+
+/* Points Package Table Specifics */
+.points-package-thead,
+.points-package-tr {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr 1fr 1.5fr 1.5fr 100px;
+  gap: 16px;
+  padding: 12px 24px;
+  align-items: center;
+}
+
+.points-package-thead {
+  background: #f9fafb;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.points-package-tr {
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+}
+
+.points-package-tr:last-child {
   border-bottom: none;
 }
 
