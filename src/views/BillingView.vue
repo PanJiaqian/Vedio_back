@@ -73,6 +73,16 @@
           <span class="icon">🎬</span>
           作品列表
         </div>
+        <div
+          :class="[
+            'menu-item',
+            activeNav === 'platformActivity' ? 'active' : '',
+          ]"
+          @click="setNav('platformActivity')"
+        >
+          <span class="icon">🎉</span>
+          平台活动
+        </div>
       </div>
 
       <div class="content">
@@ -1982,6 +1992,100 @@
           </div>
         </template>
 
+        <!-- Platform Activity View -->
+        <template v-if="activeNav === 'platformActivity'">
+          <div class="page-header">
+            <h1>平台活动管理</h1>
+            <div class="actions">
+              <input
+                v-model="platformActivityFilters.title"
+                class="input"
+                type="text"
+                placeholder="搜索标题"
+                @keyup.enter="loadPlatformActivities"
+              />
+              <button class="btn primary" @click="loadPlatformActivities">
+                搜索
+              </button>
+              <button class="btn primary" @click="openPlatformActivityCreate">
+                新增活动
+              </button>
+              <div
+                class="pagination-buttons"
+                v-if="platformActivitiesTotal > 0"
+              >
+                <span
+                  >第 {{ platformActivityFilters.page }} 页 / 每页
+                  {{ platformActivityFilters.size }}</span
+                >
+                <button
+                  class="btn small"
+                  :disabled="platformActivityFilters.page <= 1"
+                  @click="
+                    platformActivityFilters.page--;
+                    loadPlatformActivities();
+                  "
+                >
+                  上一页
+                </button>
+                <button
+                  class="btn small"
+                  :disabled="
+                    platformActivities.length < platformActivityFilters.size
+                  "
+                  @click="
+                    platformActivityFilters.page++;
+                    loadPlatformActivities();
+                  "
+                >
+                  下一页
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="table">
+            <div class="platform-activity-thead">
+              <div class="th">ID</div>
+              <div class="th">标题</div>
+              <div class="th">内容</div>
+              <div class="th">赠送积分</div>
+              <div class="th">开始时间</div>
+              <div class="th">结束时间</div>
+              <div class="th">目标用户</div>
+              <div class="th">创建时间</div>
+              <div class="th">操作</div>
+            </div>
+            <div v-if="platformActivities.length === 0" class="empty">
+              暂无数据
+            </div>
+            <div v-else class="tbody">
+              <template v-for="it in platformActivities" :key="it.id">
+                <div class="platform-activity-tr">
+                  <div class="td">{{ it.id }}</div>
+                  <div class="td">{{ it.title }}</div>
+                  <div class="td">{{ it.content }}</div>
+                  <div class="td">{{ it.pointsAmount }}</div>
+                  <div class="td">{{ formatTime(it.startTime) }}</div>
+                  <div class="td">{{ formatTime(it.endTime) }}</div>
+                  <div class="td">{{ formatTargetUsers(it.targetUsers) }}</div>
+                  <div class="td">{{ formatTime(it.createTime) }}</div>
+                  <div class="td ops">
+                    <button class="btn" @click="openPlatformActivityEdit(it)">
+                      编辑
+                    </button>
+                    <button
+                      class="btn danger"
+                      @click="onDeletePlatformActivity(it.id)"
+                    >
+                      删除
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
         <div v-if="error" class="error">{{ error }}</div>
       </div>
     </div>
@@ -2418,6 +2522,216 @@
             <button class="btn" @click="cancelDeletePointsPackage">取消</button>
             <button class="btn danger" @click="deletePointsPackageItem">
               确认删除
+            </button>
+          </div>
+          <div v-if="error" class="error">{{ error }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform Activity Create Modal -->
+    <div
+      v-if="showPlatformActivityCreate"
+      class="modal-backdrop"
+      @click.self="closePlatformActivityCreate"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <div class="title">创建平台活动</div>
+          <button class="close" @click="closePlatformActivityCreate">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form">
+            <div class="field">
+              <label class="label"
+                >标题 <span style="color: red">*</span></label
+              >
+              <input
+                v-model="platformActivityForm.title"
+                class="input"
+                type="text"
+              />
+            </div>
+            <div class="field">
+              <label class="label">内容</label>
+              <textarea
+                v-model="platformActivityForm.content"
+                class="input"
+                rows="3"
+              ></textarea>
+            </div>
+            <div class="field">
+              <label class="label"
+                >赠送积分 <span style="color: red">*</span></label
+              >
+              <input
+                v-model.number="platformActivityForm.pointsAmount"
+                class="input"
+                type="number"
+              />
+            </div>
+            <div class="field">
+              <label class="label"
+                >开始时间 <span style="color: red">*</span></label
+              >
+              <input
+                v-model="platformActivityForm.startTime"
+                class="input"
+                type="datetime-local"
+                step="1"
+              />
+            </div>
+            <div class="field">
+              <label class="label"
+                >结束时间 <span style="color: red">*</span></label
+              >
+              <input
+                v-model="platformActivityForm.endTime"
+                class="input"
+                type="datetime-local"
+                step="1"
+              />
+            </div>
+            <div class="field">
+              <label class="label">目标用户</label>
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value="FREE"
+                    v-model="platformActivityForm.targetUsers"
+                  />
+                  免费用户
+                </label>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value="STANDARD"
+                    v-model="platformActivityForm.targetUsers"
+                  />
+                  标准用户
+                </label>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value="PREMIUM"
+                    v-model="platformActivityForm.targetUsers"
+                  />
+                  高级用户
+                </label>
+              </div>
+            </div>
+            <button
+              class="btn primary"
+              @click="submitPlatformActivityCreate"
+              :disabled="loading"
+            >
+              创建
+            </button>
+          </div>
+          <div v-if="error" class="error">{{ error }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform Activity Edit Modal -->
+    <div
+      v-if="showPlatformActivityEdit"
+      class="modal-backdrop"
+      @click.self="closePlatformActivityEdit"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <div class="title">编辑平台活动</div>
+          <button class="close" @click="closePlatformActivityEdit">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form">
+            <div class="field">
+              <label class="label"
+                >标题 <span style="color: red">*</span></label
+              >
+              <input
+                v-model="platformActivityForm.title"
+                class="input"
+                type="text"
+              />
+            </div>
+            <div class="field">
+              <label class="label">内容</label>
+              <textarea
+                v-model="platformActivityForm.content"
+                class="input"
+                rows="3"
+              ></textarea>
+            </div>
+            <div class="field">
+              <label class="label"
+                >赠送积分 <span style="color: red">*</span></label
+              >
+              <input
+                v-model.number="platformActivityForm.pointsAmount"
+                class="input"
+                type="number"
+              />
+            </div>
+            <div class="field">
+              <label class="label"
+                >开始时间 <span style="color: red">*</span></label
+              >
+              <input
+                v-model="platformActivityForm.startTime"
+                class="input"
+                type="datetime-local"
+                step="1"
+              />
+            </div>
+            <div class="field">
+              <label class="label"
+                >结束时间 <span style="color: red">*</span></label
+              >
+              <input
+                v-model="platformActivityForm.endTime"
+                class="input"
+                type="datetime-local"
+                step="1"
+              />
+            </div>
+            <div class="field">
+              <label class="label">目标用户</label>
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value="FREE"
+                    v-model="platformActivityForm.targetUsers"
+                  />
+                  免费用户
+                </label>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value="STANDARD"
+                    v-model="platformActivityForm.targetUsers"
+                  />
+                  标准用户
+                </label>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value="PREMIUM"
+                    v-model="platformActivityForm.targetUsers"
+                  />
+                  高级用户
+                </label>
+              </div>
+            </div>
+            <button
+              class="btn primary"
+              @click="submitPlatformActivityEdit"
+              :disabled="loading"
+            >
+              保存
             </button>
           </div>
           <div v-if="error" class="error">{{ error }}</div>

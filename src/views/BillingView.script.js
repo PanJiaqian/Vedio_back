@@ -32,6 +32,12 @@ import {
   updatePointsPackage,
   deletePointsPackage,
 } from "@/api/pricing";
+import {
+  getPlatformActivityList,
+  createPlatformActivity,
+  updatePlatformActivity,
+  deletePlatformActivity,
+} from "@/api/platformActivity";
 export default {
   name: "BillingView",
   data() {
@@ -175,6 +181,24 @@ export default {
       },
       works: [],
       worksSortAsc: true,
+      platformActivityFilters: {
+        title: "",
+        page: 1,
+        size: 20,
+      },
+      platformActivities: [],
+      platformActivitiesTotal: 0,
+      showPlatformActivityCreate: false,
+      showPlatformActivityEdit: false,
+      platformActivityForm: {
+        id: "",
+        title: "",
+        content: "",
+        pointsAmount: 0,
+        startTime: "",
+        endTime: "",
+        targetUsers: [],
+      },
       activeNav: "pricing",
       previewVisible: false,
       previewType: "",
@@ -328,6 +352,7 @@ export default {
       else if (name === "mapping") this.loadMapping();
       else if (name === "materials") this.loadMaterials();
       else if (name === "works") this.loadWorks();
+      else if (name === "platformActivity") this.loadPlatformActivities();
       else this.loadList();
     },
     toggleExpand(item) {
@@ -1164,6 +1189,21 @@ export default {
       if (!val) return "";
       return String(val).replace("T", " ").replace("Z", "");
     },
+    formatTargetUsers(val) {
+      if (!val) return "全部用户";
+      try {
+        const arr = JSON.parse(val);
+        if (!Array.isArray(arr) || arr.length === 0) return "全部用户";
+        const map = {
+          FREE: "免费用户",
+          STANDARD: "标准用户",
+          PREMIUM: "高级用户",
+        };
+        return arr.map((v) => map[v] || v).join("、");
+      } catch (e) {
+        return val;
+      }
+    },
     openImagePreview(src) {
       if (!src) return;
       this.previewSrc = src;
@@ -1223,6 +1263,112 @@ export default {
         this.loadMemberships();
       } catch (e) {
         alert(e && e.message ? e.message : "创建失败");
+      }
+    },
+    async loadPlatformActivities() {
+      if (!this.token) {
+        this.error = "请先登录以查看平台活动";
+        return;
+      }
+      try {
+        const data = await getPlatformActivityList(
+          this.platformActivityFilters,
+          this.token
+        );
+        this.platformActivities = (data && data.items) || [];
+        this.platformActivitiesTotal = (data && data.total) || 0;
+      } catch (e) {
+        this.error = e && e.message ? e.message : "获取平台活动列表失败";
+      }
+    },
+    openPlatformActivityCreate() {
+      this.platformActivityForm = {
+        id: "",
+        title: "",
+        content: "",
+        pointsAmount: 0,
+        startTime: "",
+        endTime: "",
+        targetUsers: [],
+      };
+      this.showPlatformActivityCreate = true;
+    },
+    closePlatformActivityCreate() {
+      this.showPlatformActivityCreate = false;
+    },
+    async submitPlatformActivityCreate() {
+      if (!this.token) return;
+      try {
+        let payload = { ...this.platformActivityForm };
+        if (payload.startTime && payload.startTime.length === 16) {
+          payload.startTime += ":00";
+        }
+        if (payload.endTime && payload.endTime.length === 16) {
+          payload.endTime += ":00";
+        }
+        payload.targetUsers = JSON.stringify(payload.targetUsers || []);
+        await createPlatformActivity(payload, this.token);
+        this.closePlatformActivityCreate();
+        this.loadPlatformActivities();
+      } catch (e) {
+        alert(e && e.message ? e.message : "创建失败");
+      }
+    },
+    openPlatformActivityEdit(item) {
+      let st = item.startTime || "";
+      if (st && st.length > 16) st = st.substring(0, 16);
+      let et = item.endTime || "";
+      if (et && et.length > 16) et = et.substring(0, 16);
+
+      let targetUsers = [];
+      try {
+        if (item.targetUsers) {
+          targetUsers = JSON.parse(item.targetUsers);
+        }
+      } catch (e) {
+        targetUsers = [];
+      }
+
+      this.platformActivityForm = {
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        pointsAmount: item.pointsAmount,
+        startTime: st,
+        endTime: et,
+        targetUsers: targetUsers,
+      };
+      this.showPlatformActivityEdit = true;
+    },
+    closePlatformActivityEdit() {
+      this.showPlatformActivityEdit = false;
+    },
+    async submitPlatformActivityEdit() {
+      if (!this.token) return;
+      try {
+        let payload = { ...this.platformActivityForm };
+        if (payload.startTime && payload.startTime.length === 16) {
+          payload.startTime += ":00";
+        }
+        if (payload.endTime && payload.endTime.length === 16) {
+          payload.endTime += ":00";
+        }
+        payload.targetUsers = JSON.stringify(payload.targetUsers || []);
+        await updatePlatformActivity(payload, this.token);
+        this.closePlatformActivityEdit();
+        this.loadPlatformActivities();
+      } catch (e) {
+        alert(e && e.message ? e.message : "更新失败");
+      }
+    },
+    async onDeletePlatformActivity(id) {
+      if (!confirm("确认删除该平台活动吗？")) return;
+      if (!this.token) return;
+      try {
+        await deletePlatformActivity(id, this.token);
+        this.loadPlatformActivities();
+      } catch (e) {
+        alert(e && e.message ? e.message : "删除失败");
       }
     },
   },

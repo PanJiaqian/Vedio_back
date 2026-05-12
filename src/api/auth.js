@@ -1,3 +1,4 @@
+// export const BASE_URL = "http://182.92.68.240:1770";
 export const BASE_URL = "https://creator.nexafeed.cn:1790";
 
 async function request(path, method, data) {
